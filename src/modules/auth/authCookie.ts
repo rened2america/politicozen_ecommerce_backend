@@ -17,7 +17,7 @@ class AuthCookie {
         exp: Math.floor(Date.now() / 1000) + 60,
         code: encryptedAccessCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedAccessCode;
   };
@@ -28,7 +28,7 @@ class AuthCookie {
         exp: Math.floor(Date.now() / 1000) + 120,
         code: encryptedRefreshCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedRefreshCode;
   };

@@ -64,10 +64,11 @@ class SessionService {
         exp: Math.floor(Date.now() / 1000) + DAY_TO_MONTH,
         code: encryptedAccessCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
-    return jwtEncryptedAccessCode;
+    return jwtEncryptedAccessCode;    
   };
+  
   getRefreshToken = (refreshCode: string) => {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(
@@ -75,7 +76,7 @@ class SessionService {
         exp: Math.floor(Date.now() / 1000) + DAY_TO_YEAR,
         code: encryptedRefreshCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedRefreshCode;
   };
@@ -83,7 +84,7 @@ class SessionService {
   deleteByAccessToken = async (accessToken: string) => {
     const accessTokenDecode = jwt.verify(
       accessToken,
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     ) as JwtPayload;
     await SessionDAO.deleteByAccessCode(accessTokenDecode.code);
   };

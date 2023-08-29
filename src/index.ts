@@ -1,6 +1,10 @@
 import express from "express";
 import routes from "./route/route";
 import cookieParser from "cookie-parser";
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 const app = express();
 
 app.use(express.json());
