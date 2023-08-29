@@ -2,15 +2,8 @@ import jwt from "jsonwebtoken";
 import { Response, Request, NextFunction } from "express";
 import sessionService from "../modules/auth/sessionService";
 
-interface CustomRequest extends Request {
-  user: {
-    artistId: number;
-    // Agrega otras propiedades si es necesario
-  };
-}
-
 export const authValidate: any = async (
-  req: CustomRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
