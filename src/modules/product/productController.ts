@@ -11,8 +11,15 @@ const create = async (req: Request, res: Response) => {
   res.status(201).json({ message: "Producto Creado", product });
 };
 
+const getAll = async (_: Request, res: Response) => {
+  const products = await productService.getAll(1);
+  res.status(201).json({ message: "Producto Creado", products });
+};
+
 const createWithDecorators = withErrorHandlingDecorator(create);
+const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 
 export const productController = {
   create: createWithDecorators,
+  getAll: getAllWithDecorators,
 };

@@ -10,7 +10,6 @@ export const authValidate: any = async (
   try {
     // Validar si el token ya expiro
     // validad si el accesCode es valido
-    console.log(req.cookies);
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
 

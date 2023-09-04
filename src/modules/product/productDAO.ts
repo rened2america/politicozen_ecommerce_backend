@@ -12,6 +12,12 @@ class ProductDAO {
     });
     return newProduct;
   };
+
+  getAll = async (artistId: number) => {
+    console.log(artistId);
+    const allProducts = await prisma.product.findMany();
+    return allProducts;
+  };
 }
 
 export default new ProductDAO();

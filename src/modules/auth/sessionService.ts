@@ -2,15 +2,12 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { Session } from "@prisma/client";
 import SessionDAO from "./SessionDAO";
 import { generateCode } from "../../utils/generateCode";
-import "dotenv/config";
-
 
 const SECONDS_TO_MINUTE = 60;
 const MINUTE_TO_HOUR = SECONDS_TO_MINUTE * 60;
 const HOUR_TO_DAY = MINUTE_TO_HOUR * 24;
 const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
-
 
 class SessionService {
   getByArtistId = async (artistId: number): Promise<Session | null> => {
@@ -69,9 +66,9 @@ class SessionService {
       },
       process.env.JWT_SECRET_KEY!
     );
-    return jwtEncryptedAccessCode;    
+    return jwtEncryptedAccessCode;
   };
-  
+
   getRefreshToken = (refreshCode: string) => {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(

@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import "dotenv/config";
 
 class AuthCookie {
   getAccessCode = (accessToken: string) => {
