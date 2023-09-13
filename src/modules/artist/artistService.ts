@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { Artist } from "@prisma/client";
 import artistDAO from "./artistDAO";
 
@@ -11,7 +12,8 @@ class ArtistService {
     password: string,
     passwordFromDb: string
   ): Promise<boolean> => {
-    return password === passwordFromDb;
+    const isValidPassword = await bcrypt.compare(password, passwordFromDb);
+    return isValidPassword;
   };
 }
 

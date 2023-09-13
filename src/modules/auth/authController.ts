@@ -9,10 +9,17 @@ import { CreateSession, SessionCreated } from "./authDTO";
 import artistService from "../artist/artistService";
 import sessionService from "./sessionService";
 import { generateCode } from "../../utils/generateCode";
-const login = async (_: Request, res: Response) => {
+import authService from "./authService";
+const login = async (req: Request, res: Response) => {
+  console.log(req.body.email, req.body.password);
+  // const payload = {
+  //   email: "renemeza.escamilla@gmail.com",
+  //   password: "123456",
+  // };
+
   const payload = {
-    email: "renemeza.escamilla@gmail.com",
-    password: "123456",
+    email: req.body.email,
+    password: req.body.password,
   };
 
   const artistExist = await artistService.getArtistByEmail(payload.email);
@@ -75,7 +82,7 @@ const login = async (_: Request, res: Response) => {
   const refreshToken = authCookie.getRefreshToken(refreshCode);
 
   const session: CreateSession = {
-    artistId: 1,
+    artistId: artistExist.id,
     accessCode,
     refreshCode,
     accessToken,
@@ -110,9 +117,36 @@ const signout = async (req: Request, res: Response) => {
   });
 };
 
+const createAccount = async (_: Request, res: Response) => {
+  // const user = req.body;
+  const user = {
+    name: "Rene Alberto Meza Escamilla",
+    email: "rame.rmeza@gmail.com",
+    password: "emar16198",
+  };
+
+  const password = user.password;
+  const passwordToSave = await authService.encryptPassword(password);
+  const newUser = await authService.createUser({
+    ...user,
+    password: passwordToSave,
+  });
+
+  const sendEmail = await authService.sendEmailConfirmation(newUser.email);
+
+  res.status(201).json({
+    message: "user created",
+    newUser,
+    sendEmail,
+  });
+};
+
 const loginWithDecorators = withErrorHandlingDecorator(login);
 const signoutWithDecorators = withErrorHandlingDecorator(signout);
+const createAccountWithDecorators = withErrorHandlingDecorator(createAccount);
+
 export const authController = {
   login: loginWithDecorators,
   signout: signoutWithDecorators,
+  createAccount: createAccountWithDecorators,
 };

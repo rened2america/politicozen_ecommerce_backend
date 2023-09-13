@@ -14,6 +14,8 @@ model Artist {
   email String @db.VarChar(300) @unique
   password String @db.VarChar(300)
   nationality String @db.VarChar(100) @default("")
+  emailConfirmation Boolean @default(false)
+  verifyArtist Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   session Session?
@@ -40,6 +42,7 @@ model Product {
   price Decimal @db.Decimal(8,2)
   title String
   subtitle  String
+  design Design[]
   sizes Size[]
   colors Color[]
   types Type[]
@@ -76,8 +79,12 @@ model Design {
   width Int @default(0)
   height Int @default(0)
   url String
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
   artist Artist @relation(fields:[artistId], references: [id] )
   artistId Int @unique
+  @@index([productId])
+
 }
 
 // type ArtistsAlbums {
