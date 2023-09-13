@@ -3,7 +3,8 @@ import { authController } from "./authController";
 const routes = Router();
 
 routes
-  .get("/login", authController.login)
-  .get("/signout", authController.signout);
+  .post("/login", authController.login)
+  .get("/signout", authController.signout)
+  .post("/create", authController.createAccount);
 
 export const authRoute = routes;
