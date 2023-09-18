@@ -8,6 +8,7 @@ routes
   .post("/create", productController.create)
   .get("/all", productController.getAll)
   .get("/allByUser", productController.getByUser)
-  .get("/:id", productController.getById);
+  .get("/:id", productController.getById)
+  .post("/payment", productController.session);
 
 export const productRoute = routes;

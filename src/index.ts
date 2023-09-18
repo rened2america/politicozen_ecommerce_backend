@@ -6,7 +6,17 @@ import "dotenv/config";
 // import bodyParser from "body-parser";
 const app = express();
 
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(
+  cors({
+    credentials: true,
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://politicozen-dashboard-frontend-p5fagpv5f-rened2america.vercel.app",
+      "https://frontend-politicozen-renemeza.vercel.app",
+    ],
+  })
+);
 // app.use(express.json());
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));

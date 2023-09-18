@@ -15,7 +15,11 @@ class ProductDAO {
 
   getByUser = async (artistId: number) => {
     console.log(artistId);
-    const allProducts = await prisma.product.findMany();
+    const allProducts = await prisma.product.findMany({
+      where: {
+        artistId,
+      },
+    });
     return allProducts;
   };
 

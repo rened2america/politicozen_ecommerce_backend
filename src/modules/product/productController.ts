@@ -97,7 +97,7 @@ const create = async (req: Request, res: Response) => {
     unit_amount: 3000,
   });
 
-  const artistId = 6;
+  const artistId = req.user.artistId;
   // // validar si el titulo del producto existe si no existe crear el producto
   const newProduct = await productService.create({
     price: priceGreen.unit_amount ? priceGreen.unit_amount / 100 : null,
@@ -155,8 +155,9 @@ const create = async (req: Request, res: Response) => {
     .json({ message: "Producto Creado", newProduct, createManyDesign });
 };
 
-const getByUser = async (_: Request, res: Response) => {
-  const products = await productService.getByUser(1);
+const getByUser = async (req: Request, res: Response) => {
+  const artistId = req.user.artistId;
+  const products = await productService.getByUser(artistId);
   res.status(201).json({ message: "Producto Creado", products });
 };
 
@@ -174,14 +175,41 @@ const getById = async (req: Request, res: Response) => {
   res.status(201).json({ message: "Productos Obtenidos", products });
 };
 
+const session = async (req: Request, res: Response) => {
+  const priceId = req.body.priceId;
+  console.log("req.body", req.body);
+  const stripe = new Stripe(
+    "sk_test_51HFtCKDsqhqgulRL3PU0mFSWSEZiCeJQCHhSldDZJKl77sKFAXUrUyfpegHjjV3jFNoiVK6qAIW0T3J2rbILKbJ5008zvuTfYN",
+    {
+      apiVersion: "2023-08-16",
+    }
+  );
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card", "us_bank_account"],
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: "gooogle.com",
+    cancel_url: "youtube.com",
+  });
+
+  res.status(201).json({ message: "Session obtenida", session });
+};
+
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
 const getByIdWithDecorators = withErrorHandlingDecorator(getById);
+const sessionWithDecorators = withErrorHandlingDecorator(session);
 
 export const productController = {
   create: createWithDecorators,
   getAll: getAllWithDecorators,
   getByUser: getByUserWithDecorators,
   getById: getByIdWithDecorators,
+  session: sessionWithDecorators,
 };
