@@ -8,7 +8,7 @@ const MINUTE_TO_HOUR = SECONDS_TO_MINUTE * 60;
 const HOUR_TO_DAY = MINUTE_TO_HOUR * 24;
 const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
-
+console.log(DAY_TO_YEAR);
 class SessionService {
   getByArtistId = async (artistId: number): Promise<Session | null> => {
     const session = await SessionDAO.getByArtistId(artistId);
