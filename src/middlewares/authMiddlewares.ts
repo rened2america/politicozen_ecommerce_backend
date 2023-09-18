@@ -27,16 +27,16 @@ export const authValidate: any = async (
 
     console.log("String");
 
-    if (
-      !accessTokenDecode ||
-      typeof accessTokenDecode === "string" ||
-      !refreshTokenDecode ||
-      typeof refreshTokenDecode === "string"
-    ) {
-      res.status(401).json({ message: "User not logged in" });
-      return;
-    }
-    console.log("after String");
+    // if (
+    //   !accessTokenDecode ||
+    //   typeof accessTokenDecode === "string" ||
+    //   !refreshTokenDecode ||
+    //   typeof refreshTokenDecode === "string"
+    // ) {
+    //   res.status(401).json({ message: "User not logged in" });
+    //   return;
+    // }
+    // console.log("after String");
 
     const sessionIsValid = await sessionService.isValid(
       accessTokenDecode,
