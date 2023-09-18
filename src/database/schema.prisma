@@ -19,7 +19,7 @@ model Artist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   session Session?
-  design Design?
+  design Design[]
   product Product[]
 
 } 
@@ -76,13 +76,18 @@ model Design {
   id Int @id @default(autoincrement())
   positionX Int @default(0)
   positionY Int @default(0)
+  angle Int @default(0)
   width Int @default(0)
   height Int @default(0)
+  variant String @default("")
+  price Decimal @db.Decimal(8,2)
+  priceId String @default("")
   url String
+  urlLogo String 
+  artist Artist @relation(fields:[artistId], references: [id] )
+  artistId Int
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
-  artist Artist @relation(fields:[artistId], references: [id] )
-  artistId Int @unique
   @@index([productId])
 
 }
