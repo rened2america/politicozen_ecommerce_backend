@@ -61,7 +61,7 @@ class SessionService {
     const encryptedAccessCode = accessCode;
     const jwtEncryptedAccessCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + DAY_TO_MONTH,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedAccessCode,
       },
       process.env.JWT_SECRET_KEY!
@@ -73,7 +73,7 @@ class SessionService {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + DAY_TO_YEAR,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedRefreshCode,
       },
       process.env.JWT_SECRET_KEY!

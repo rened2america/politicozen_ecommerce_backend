@@ -14,7 +14,7 @@ class AuthCookie {
     const encryptedAccessCode = accessCode;
     const jwtEncryptedAccessCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + 60,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedAccessCode,
       },
       process.env.JWT_SECRET_KEY!
@@ -25,7 +25,7 @@ class AuthCookie {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + 120,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedRefreshCode,
       },
       process.env.JWT_SECRET_KEY!
