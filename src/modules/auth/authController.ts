@@ -117,13 +117,13 @@ const signout = async (req: Request, res: Response) => {
   });
 };
 
-const createAccount = async (_: Request, res: Response) => {
-  // const user = req.body;
-  const user = {
-    name: "Rene Alberto Meza Escamilla",
-    email: "rame.rmeza@gmail.com",
-    password: "emar16198",
-  };
+const createAccount = async (req: Request, res: Response) => {
+  const user = req.body;
+  // const user = {
+  //   name: "Rene Alberto Meza Escamilla",
+  //   email: "rame.rmeza@gmail.com",
+  //   password: "emar16198",
+  // };
 
   const password = user.password;
   const passwordToSave = await authService.encryptPassword(password);

@@ -13,8 +13,8 @@ class ProductService {
     const getProducts = await productDAO.getAll();
     return getProducts;
   };
-  getById = async (id: number) => {
-    const getProducts = await productDAO.getById(id);
+  getById = async (id: number, variant: string) => {
+    const getProducts = await productDAO.getById(id, variant);
     return getProducts;
   };
 }

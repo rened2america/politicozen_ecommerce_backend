@@ -2,10 +2,15 @@ import { prisma } from "../../database/initialConfig";
 
 class ProductDAO {
   create = async (data: any) => {
-    const newProduct = await prisma.product.create({
-      data,
-    });
-    return newProduct;
+    try {
+      const newProduct = await prisma.product.create({
+        data,
+      });
+      return newProduct;
+    } catch (error) {
+      console.log("localError", error);
+      return error;
+    }
   };
 
   getByUser = async (artistId: number) => {
@@ -15,14 +20,25 @@ class ProductDAO {
   };
 
   getAll = async () => {
-    const allProducts = await prisma.product.findMany();
+    const allProducts = await prisma.product.findMany({
+      include: {
+        design: true,
+      },
+    });
     return allProducts;
   };
 
-  getById = async (id: number) => {
+  getById = async (id: number, variant: string) => {
     const allProducts = await prisma.product.findUnique({
       where: {
         id,
+      },
+      include: {
+        design: {
+          where: {
+            variant,
+          },
+        },
       },
     });
     return allProducts;
