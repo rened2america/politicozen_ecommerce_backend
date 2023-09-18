@@ -1,6 +1,6 @@
-import jwt from "jsonwebtoken";
+// import jwt from "jsonwebtoken";
 import { Response, Request, NextFunction } from "express";
-import sessionService from "../modules/auth/sessionService";
+// import sessionService from "../modules/auth/sessionService";
 
 export const authValidate: any = async (
   req: Request,
