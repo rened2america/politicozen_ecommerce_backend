@@ -62,8 +62,16 @@ const login = async (req: Request, res: Response) => {
     console.log("2sessionIsValid", sessionIsValid);
     if (sessionIsValid) {
       res
-        .cookie("accessToken", sessionIsValid.accessToken, { httpOnly: true })
-        .cookie("refreshToken", sessionIsValid.refreshToken, { httpOnly: true })
+        .cookie("accessToken", sessionIsValid.accessToken, {
+          httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
+        })
+        .cookie("refreshToken", sessionIsValid.refreshToken, {
+          httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
+        })
         .status(ARTISTI_LOGIN.status)
         .json({
           meesage: ARTISTI_LOGIN.message,
@@ -102,8 +110,16 @@ const login = async (req: Request, res: Response) => {
     accessToken,
   };
   res
-    .cookie("accessToken", accessToken, { httpOnly: true })
-    .cookie("refreshToken", refreshToken, { httpOnly: true })
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "none" as const,
+      secure: true,
+    })
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "none" as const,
+      secure: true,
+    })
     .status(ARTISTI_LOGIN.status)
     .json({ meesage: ARTISTI_LOGIN.message, ...responseData });
 };

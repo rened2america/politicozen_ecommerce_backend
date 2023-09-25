@@ -156,6 +156,7 @@ const create = async (req: Request, res: Response) => {
 };
 
 const getByUser = async (req: Request, res: Response) => {
+  console.log()
   const artistId = req.user.artistId;
   const products = await productService.getByUser(artistId);
   res.status(201).json({ message: "Producto Creado", products });
