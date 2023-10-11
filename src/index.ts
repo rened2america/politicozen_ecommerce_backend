@@ -18,6 +18,8 @@ app.use(
       "https://app.politicozen.dev/",
       "https://app.politicozen.dev/login",
     ],
+    methods: "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE",
+    allowedHeaders: ["Content-Type"],
   })
 );
 // app.use(express.json());
