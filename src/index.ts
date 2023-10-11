@@ -16,6 +16,7 @@ app.use(
       "https://frontend-politicozen-renemeza.vercel.app",
       "https://politicozen.dev/",
       "https://app.politicozen.dev/",
+      "https://app.politicozen.dev/login",
     ],
   })
 );
