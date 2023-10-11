@@ -14,6 +14,8 @@ app.use(
       "http://localhost:5173",
       "https://politicozen-dashboard-frontend-p5fagpv5f-rened2america.vercel.app",
       "https://frontend-politicozen-renemeza.vercel.app",
+      "https://politicozen.dev/",
+      "https://app.politicozen.dev/",
     ],
   })
 );

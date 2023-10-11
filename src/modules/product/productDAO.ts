@@ -23,16 +23,34 @@ class ProductDAO {
     return allProducts;
   };
 
-  getAll = async () => {
-    const allProducts = await prisma.product.findMany({
-      include: {
-        design: true,
-      },
-    });
-    return allProducts;
+  getAll = async (filters: any, page: any) => {
+    console.log(page);
+    const [allProducts, count] = await prisma.$transaction([
+      prisma.product.findMany({
+        skip: (page.page - 1) * page.limit,
+        take: page.limit,
+        where: {
+          AND: filters,
+        },
+        include: {
+          design: true,
+          tag: true,
+          types: true,
+          artist: true,
+        },
+      }),
+      prisma.product.count({
+        where: {
+          AND: filters,
+        },
+      }),
+    ]);
+    console.log(count);
+    return { products: allProducts, count: count };
   };
 
-  getById = async (id: number, variant: string) => {
+  getById = async (id: number, variant: string, size: string) => {
+    console.log("getById", id);
     const allProducts = await prisma.product.findUnique({
       where: {
         id,
@@ -41,10 +59,14 @@ class ProductDAO {
         design: {
           where: {
             variant,
+            size,
           },
         },
+        sizes: true,
+        colors: true,
       },
     });
+    console.log("allProducts", allProducts);
     return allProducts;
   };
 }

@@ -1,204 +1,300 @@
 import { Request, Response } from "express";
 import { withErrorHandlingDecorator } from "../../decorators/withErrorHandlingDecorator";
 import productService from "./productService";
-import Stripe from "stripe";
 //import { decode } from "base64-arraybuffer"; borrar
 // import { Upload } from "@aws-sdk/lib-storage"; borrar
 // import { S3Client } from "@aws-sdk/client-s3"; borrar
-import AWS from "aws-sdk";
 import { prisma } from "../../database/initialConfig";
-
+import { isJson } from "../../utils/isJson";
+import { connectionStripe } from "../../utils/configStripe";
+import { connectionAws } from "../../utils/configAws";
+import { round } from "mathjs";
+import { generateCode } from "../../utils/generateCode";
 const create = async (req: Request, res: Response) => {
-  const { x, y, angle } = req.body;
-  const accessKeyId = "AKIA5V3WMRCAFULV2ZLM";
-  const secretAccessKey = "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";
-  const region = "us-east-2";
-  const Bucket = "politicozen-test";
+  const { x, y, angle, scale } = req.body;
+  const xDecimal = round(x, 6);
+  const yDecimal = round(y, 6);
+  const angleDecimal = round(angle, 6);
+  const scaleDecimal = round(scale, 6);
 
-  AWS.config.update({
-    accessKeyId,
-    secretAccessKey,
-    region,
-  });
-
-  // Crea un nuevo objeto de servicio S3
-  const s3 = new AWS.S3();
-  const imgLogo = Buffer.from(req.body.imgLogo, "base64");
-  const imgListProducts = req.body.imgListProduct.map((imgProduct: any) => {
-    return Buffer.from(imgProduct.split(",")[1], "base64");
-  });
-  // const imgProduct = Buffer.from(req.body.imgProduct.split(",")[1], "base64");
   const productName = req.body.name;
-  const paramsImgLogo = {
-    Bucket,
-    Key: `${Date.now().toString()}-${productName}-logo`,
-    Body: imgLogo,
-    ContentType: "image/png", // Cambia esto según el tipo de imagen
-  };
-  //Primer Producto Verde
+  const productSubtitle = req.body.subtitle;
+  const productDescription = req.body.description;
 
-  const paramsImgProductGreen = {
-    Bucket,
-    Key: `${Date.now().toString()}-${productName}-green-product`,
-    Body: imgListProducts[0],
-    ContentType: "image/png", // Cambia esto según el tipo de imagen
-  };
-  const paramsImgProductBlue = {
-    Bucket,
-    Key: `${Date.now().toString()}-${productName}-blue-product`,
-    Body: imgListProducts[1],
-    ContentType: "image/png", // Cambia esto según el tipo de imagen
-  };
-  const paramsImgProductRed = {
-    Bucket,
-    Key: `${Date.now().toString()}-${productName}-red-product`,
-    Body: imgListProducts[2],
-    ContentType: "image/png", // Cambia esto según el tipo de imagen
-  };
-  const imgLogoURL = await s3.upload(paramsImgLogo).promise();
-  const imgProductURLGreen = await s3.upload(paramsImgProductGreen).promise();
-  const imgProductURLBlue = await s3.upload(paramsImgProductBlue).promise();
+  const s3 = connectionAws();
+  const stripe = connectionStripe();
 
-  const imgProductURLRed = await s3.upload(paramsImgProductRed).promise();
-
-  const stripe = new Stripe(
-    "sk_test_51HFtCKDsqhqgulRL3PU0mFSWSEZiCeJQCHhSldDZJKl77sKFAXUrUyfpegHjjV3jFNoiVK6qAIW0T3J2rbILKbJ5008zvuTfYN",
-    {
-      apiVersion: "2023-08-16",
-    }
+  const logoURL = await productService.uploadLogo(
+    req.body.imgLogo,
+    s3,
+    productName
+  );
+  const imagesBuffer = await productService.transformImagesFromBase64ToBuffer(
+    req.body.imgListProduct
+  );
+  const ImagesUrl = await productService.uploadImages(
+    imagesBuffer,
+    productName,
+    s3
+  );
+  const productStripe = await productService.createProductInStripe(
+    ImagesUrl,
+    stripe,
+    productName
   );
 
-  const productGreen = await stripe.products.create({
-    name: `${productName}-green-product`,
-    images: [imgProductURLGreen.Location],
-  });
-  const productBlue = await stripe.products.create({
-    name: `${productName}-blue-product`,
-    images: [imgProductURLBlue.Location],
-  });
-  const productRed = await stripe.products.create({
-    name: `${productName}-red-product`,
-    images: [imgProductURLRed.Location],
-  });
-
-  const priceGreen = await stripe.prices.create({
-    product: productGreen.id,
-    currency: "usd",
-    unit_amount: 3000,
-  });
-  const priceBlue = await stripe.prices.create({
-    product: productBlue.id,
-    currency: "usd",
-    unit_amount: 3000,
-  });
-  const priceRed = await stripe.prices.create({
-    product: productRed.id,
-    currency: "usd",
-    unit_amount: 3000,
-  });
+  // const imgListProducts = req.body.imgListProduct.map((imgProduct: any) => {
+  //   return Buffer.from(imgProduct.split(",")[1], "base64");
+  // });
+  // const imgProduct = Buffer.from(req.body.imgProduct.split(",")[1], "base64");
 
   const artistId = req.user.artistId;
   // // validar si el titulo del producto existe si no existe crear el producto
   const newProduct = await productService.create({
-    price: priceGreen.unit_amount ? priceGreen.unit_amount / 100 : null,
+    price: 30,
     title: productName,
-    subtitle: "prueba subtitulo",
+    subtitle: productSubtitle,
+    description: productDescription,
     artistId: artistId,
-  });
-  //@ts-ignore
-  const productId: number = newProduct.id;
-  const createManyDesign = await prisma.design.createMany({
-    data: [
-      {
-        productId: productId,
-        positionX: x,
-        positionY: y,
-        angle: angle,
-        variant: "green",
-        price: priceGreen.unit_amount ? priceGreen.unit_amount / 100 : 0,
-        priceId: priceGreen.id,
-        url: imgProductURLGreen.Location,
-        urlLogo: imgLogoURL.Location,
-        artistId: artistId,
-      },
-      {
-        productId: productId,
+    idGeneral: generateCode(),
 
-        positionX: x,
-        positionY: y,
-        angle: angle,
-        variant: "blue",
-        price: priceBlue.unit_amount ? priceBlue.unit_amount / 100 : 0,
-        priceId: priceBlue.id,
-        url: imgProductURLBlue.Location,
-        urlLogo: imgLogoURL.Location,
-        artistId: artistId,
-      },
-      {
-        productId: productId,
-        positionX: x,
-        positionY: y,
-        angle: angle,
-        variant: "red",
-        price: priceRed.unit_amount ? priceRed.unit_amount / 100 : 0,
-        priceId: priceRed.id,
-        url: imgProductURLRed.Location,
-        urlLogo: imgLogoURL.Location,
-        artistId: artistId,
-      },
-    ],
+    sizes: {
+      connectOrCreate: [
+        {
+          where: { value: "S" },
+          create: { value: "S" },
+        },
+        {
+          where: { value: "M" },
+          create: { value: "M" },
+        },
+        {
+          where: { value: "L" },
+          create: { value: "L" },
+        },
+      ],
+    },
+    colors: {
+      connectOrCreate: [
+        {
+          where: { value: "White" },
+          create: { value: "White" },
+        },
+        {
+          where: { value: "Beige" },
+          create: { value: "Beige" },
+        },
+        {
+          where: { value: "Red" },
+          create: { value: "Red" },
+        },
+        {
+          where: { value: "Blue" },
+          create: { value: "Blue" },
+        },
+        {
+          where: { value: "Black" },
+          create: { value: "Black" },
+        },
+      ],
+    },
+  });
+  const productsToDb = productStripe.flat().map((product) => {
+    return {
+      //@ts-ignore
+      productId: newProduct.id,
+      positionX: xDecimal,
+      positionY: yDecimal,
+      angle: angleDecimal,
+      scale: scaleDecimal,
+      variant: product.color,
+      price: 30,
+      priceId: product.id,
+      url: product.imgProductURL,
+      urlLogo: logoURL,
+      artistId: artistId,
+      size: product.size,
+    };
+  });
+  const createManyDesign = await prisma.design.createMany({
+    //@ts-ignore
+    data: productsToDb,
     skipDuplicates: true,
   });
-
-  res
-    .status(201)
-    .json({ message: "Producto Creado", newProduct, createManyDesign });
+  res.status(201).json({
+    message: "Producto Creado",
+    products: createManyDesign ? createManyDesign : [],
+  });
 };
 
 const getByUser = async (req: Request, res: Response) => {
-  console.log()
   const artistId = req.user.artistId;
   const products = await productService.getByUser(artistId);
-  res.status(201).json({ message: "Producto Creado", products });
+  res.status(201).json({ message: "Producto Creado", products: products });
 };
 
-const getAll = async (_: Request, res: Response) => {
-  const products = await productService.getAll();
-  res.status(201).json({ message: "Productos Obtenidos", products });
+const getAll = async (req: Request, res: Response) => {
+  // const sortBy = req.query.sortBy || "desc";
+  const search = req.query.search || "";
+  const filter = req.query.filters || "";
+  //@ts-ignore
+  const page = req.query.page ? parseInt(req.query.page) : 1;
+  const limit = 12;
+  //@ts-ignore
+  if (isJson(filter)) {
+    //@ts-ignore
+
+    const filterParse = JSON.parse(filter);
+    const filterEntries: any = Object.entries(filterParse);
+
+    const arrayFilter = filterEntries.map((entry: any) => {
+      const newFilter = {};
+
+      if (entry[0] === "artistId") {
+        //@ts-ignore
+        newFilter[entry[0]] = {
+          in: entry[1],
+        };
+        return newFilter;
+      }
+      //@ts-ignore
+      newFilter[entry[0]] = {
+        some: {
+          value: {
+            in: entry[1],
+          },
+        },
+      };
+      return newFilter;
+    });
+    arrayFilter.push({
+      title: {
+        contains: search,
+      },
+    });
+    const products = await productService.getAll(arrayFilter, { page, limit });
+    res.status(201).json({
+      message: "Productos Obtenidos",
+      products: products.products,
+      count: products.count,
+    });
+    return;
+  } else {
+    const arrayFilter = [
+      {
+        title: {
+          contains: search,
+        },
+      },
+    ];
+    const products = await productService.getAll(arrayFilter, {
+      page,
+      limit,
+    });
+    res.status(201).json({
+      message: "Productos Obtenidos",
+      products: products.products,
+      count: products.count,
+    });
+  }
 };
 
 const getById = async (req: Request, res: Response) => {
   const productId: number = parseInt(req.params.id);
   //@ts-ignore
-  const variant: string = req.query.variant ? req.query.variant : "green";
-  const products = await productService.getById(productId, variant);
-  console.log(products);
+  const variant: string = req.query.variant ? req.query.variant : "white";
+  //@ts-ignore
+  const size = req.query.size ? req.query.size : "S";
+  //@ts-ignore
+  const products = await productService.getById(productId, variant, size);
   res.status(201).json({ message: "Productos Obtenidos", products });
 };
 
 const session = async (req: Request, res: Response) => {
-  const priceId = req.body.priceId;
-  console.log("req.body", req.body);
-  const stripe = new Stripe(
-    "sk_test_51HFtCKDsqhqgulRL3PU0mFSWSEZiCeJQCHhSldDZJKl77sKFAXUrUyfpegHjjV3jFNoiVK6qAIW0T3J2rbILKbJ5008zvuTfYN",
-    {
-      apiVersion: "2023-08-16",
-    }
-  );
+  const NormalizeProducts = req.body.products.map((product: any) => {
+    return {
+      price: product.priceId,
+      quantity: product.count,
+    };
+  });
+  const stripe = connectionStripe();
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card", "us_bank_account"],
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    success_url: "gooogle.com",
-    cancel_url: "youtube.com",
+    payment_method_types: ["card"],
+    line_items: NormalizeProducts,
+    success_url: "https://politicozen.dev/succes/",
+    cancel_url: "https://politicozen.dev/cancel/",
   });
 
-  res.status(201).json({ message: "Session obtenida", session });
+  res
+    .status(201)
+    .json({ message: "Session obtenida", session: session ? session : {} });
+};
+
+const webhook = async (req: Request, res: Response) => {
+  const stripe = connectionStripe();
+  if (req.body.type === "checkout.session.completed") {
+    const user = req.body.data.object.customer_details;
+    const listData = await stripe.checkout.sessions.listLineItems(
+      req.body.data.object.id
+    );
+    const listPromise = listData.data.map(async (product) => {
+      const design = await prisma.design.findFirst({
+        where: {
+          //@ts-ignore
+          priceId: product.price.id,
+        },
+      });
+      await prisma.order.create({
+        data: {
+          city: user.address.city ? user.address.city : "",
+          country: user.address.country ? user.address.country : "",
+          line1: user.address.line1 ? user.address.line1 : "",
+          line2: user.address.line2 ? user.address.line2 : "",
+          postalCode: user.address.postal_code ? user.address.postal_code : "",
+          state: user.address.state ? user.address.state : "",
+          email: user.email ? user.email : "",
+          name: user.name ? user.name : "",
+          phone: user.phone ? user.phone : "",
+          amount: product.amount_total.toString(),
+          //@ts-ignore
+          quantity: product.quantity,
+          //@ts-ignore
+          priceId: product.price.id,
+          productName: product.description,
+          //@ts-ignore
+          artistId: design?.artistId,
+        },
+      });
+    });
+
+    await Promise.all(listPromise);
+  }
+  res.sendStatus(200);
+};
+
+const getOrders = async (req: Request, res: Response) => {
+  const artistId = req.user.artistId;
+  const ordersCount = await prisma.order.count({
+    where: {
+      artistId,
+    },
+  });
+  const orders = await prisma.order.findMany({
+    where: {
+      artistId,
+    },
+  });
+
+  const totalAmount = orders.reduce(
+    (sum, order) => sum + parseInt(order.amount),
+    0
+  );
+  res.status(201).json({
+    amount: totalAmount,
+    countSales: ordersCount,
+    orders,
+  });
 };
 
 const createWithDecorators = withErrorHandlingDecorator(create);
@@ -206,6 +302,8 @@ const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
 const getByIdWithDecorators = withErrorHandlingDecorator(getById);
 const sessionWithDecorators = withErrorHandlingDecorator(session);
+const webhookWithDecorators = withErrorHandlingDecorator(webhook);
+const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
 
 export const productController = {
   create: createWithDecorators,
@@ -213,4 +311,6 @@ export const productController = {
   getByUser: getByUserWithDecorators,
   getById: getByIdWithDecorators,
   session: sessionWithDecorators,
+  webhook: webhookWithDecorators,
+  getOrders: getOrdersWithDecorators,
 };

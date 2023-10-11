@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Response, Request, NextFunction } from "express";
 import sessionService from "../modules/auth/sessionService";
+import { prisma } from "../database/initialConfig";
 
 export const authValidate: any = async (
   req: Request,
@@ -20,7 +21,6 @@ export const authValidate: any = async (
     // //"emDgcBoq4Vv_w2ecS-Egz"
     // jwt.verify(refreshToken, "emDgcBoq4Vv_w2ecS-Egz");
     // jwt.verify(accessToken, "emDgcBoq4Vv_w2ecS-Egz");
-    console.log("Decode");
     const accessTokenDecode = jwt.decode(accessToken);
     const refreshTokenDecode = jwt.decode(refreshToken);
     console.log(accessTokenDecode, refreshTokenDecode);
@@ -45,6 +45,15 @@ export const authValidate: any = async (
       refreshToken
     );
     if (sessionIsValid) {
+      console.log("sessionIsValid", sessionIsValid);
+      const artist = await prisma.artist.findUnique({
+        where: {
+          id: sessionIsValid.artistId,
+        },
+      });
+      if (!artist?.emailConfirmation) {
+        res.status(403).json({ message: "confirm email" });
+      }
       if (sessionIsValid.artistId) {
         req.user = {
           artistId: sessionIsValid.artistId,
@@ -53,9 +62,13 @@ export const authValidate: any = async (
       res
         .cookie("accessToken", sessionIsValid.accessToken, {
           httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
         })
         .cookie("refreshToken", sessionIsValid.refreshToken, {
           httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
         });
 
       return next();

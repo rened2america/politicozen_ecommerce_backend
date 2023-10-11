@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -16,13 +17,41 @@ model Artist {
   nationality String @db.VarChar(100) @default("")
   emailConfirmation Boolean @default(false)
   verifyArtist Boolean @default(false)
+  banner String @default("")
+  avatar String @default("")
+  facebook  String @default("")
+  instagram String @default("")
+  twitter   String @default("")
+  website   String @default("")
+  bio String @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   session Session?
   design Design[]
   product Product[]
-
+  order Order[]
 } 
+
+model Order {
+  id Int @id @default(autoincrement())
+  city String @default("")
+  country String @default("")
+  line1 String @default("")
+  line2 String @default("")
+  postalCode String @default("")
+  state String @default("")
+  email String @default("")
+  name String @default("")
+  phone String @default("")
+  amount String @default("")
+  quantity Int @default(1)
+  priceId String @default("")
+  productName String @default("")
+  artist Artist @relation(fields:[artistId], references: [id] )
+  artistId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model Session {
   id Int @id @default(autoincrement())
@@ -42,6 +71,9 @@ model Product {
   price Decimal @db.Decimal(8,2)
   title String
   subtitle  String
+  idGeneral String
+  description String
+  tag Tag[]
   design Design[]
   sizes Size[]
   colors Color[]
@@ -53,15 +85,21 @@ model Product {
   @@index([artistId])
 }
 
+model Tag {
+  id Int @id @default(autoincrement())
+  value String @db.VarChar(10) @unique
+  products Product[]
+}
+
 model Size {
   id Int @id @default(autoincrement())
-  value String @db.VarChar(10)
+  value String @db.VarChar(10) @unique
   products Product[]
 }
 
 model Color {
   id Int @id @default(autoincrement())
-  value String @db.VarChar(100)
+  value String @db.VarChar(100) @unique
   products Product[]
 }
 model Type {
@@ -74,12 +112,14 @@ model Type {
 
 model Design {
   id Int @id @default(autoincrement())
-  positionX Int @default(0)
-  positionY Int @default(0)
-  angle Int @default(0)
+  positionX Decimal @default(0) @db.Decimal(8,2)
+  positionY Decimal @default(0) @db.Decimal(8,2)
+  angle Decimal @default(0) @db.Decimal(8,2)
+  scale Decimal @default(0) @db.Decimal(8,2)
   width Int @default(0)
   height Int @default(0)
   variant String @default("")
+  size String
   price Decimal @db.Decimal(8,2)
   priceId String @default("")
   url String
