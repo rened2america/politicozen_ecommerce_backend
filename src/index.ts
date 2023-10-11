@@ -15,6 +15,8 @@ app.use(
       "https://politicozen-dashboard-frontend-p5fagpv5f-rened2america.vercel.app",
       "https://frontend-politicozen-renemeza.vercel.app",
       "https://politicozen.dev/",
+      "https://politicozen.dev",
+      "http://politicozen.dev",
       "https://app.politicozen.dev/",
       "https://app.politicozen.dev",
       "http://app.politicozen.dev",
