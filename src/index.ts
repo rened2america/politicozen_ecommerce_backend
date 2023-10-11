@@ -8,11 +8,17 @@ const app = express();
 
 app.use(
   cors({
-    allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
-    exposedHeaders: ["authorization"], // you can change the headers
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    preflightContinue: false,
+    credentials: true,
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://politicozen-dashboard-frontend-p5fagpv5f-rened2america.vercel.app",
+      "https://frontend-politicozen-renemeza.vercel.app",
+      "https://politicozen.dev/",
+      "https://app.politicozen.dev/",
+      "https://app.politicozen.dev",
+      "http://app.politicozen.dev",
+    ],
   })
 );
 // app.use(express.json());
