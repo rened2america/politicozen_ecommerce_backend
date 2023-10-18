@@ -104,7 +104,7 @@ model Color {
 }
 model Type {
   id Int @id @default(autoincrement())
-  value String @db.VarChar(100)
+  value String @db.VarChar(100) @unique
   products Product[]
 }
 

@@ -12,10 +12,6 @@ import { generateCode } from "../../utils/generateCode";
 import authService from "./authService";
 const login = async (req: Request, res: Response) => {
   console.log(req.body.email, req.body.password);
-  // const payload = {
-  //   email: "renemeza.escamilla@gmail.com",
-  //   password: "123456",
-  // };
 
   const payload = {
     email: req.body.email,
@@ -149,20 +145,32 @@ const createAccount = async (req: Request, res: Response) => {
   });
 
   const sendEmail = await authService.sendEmailConfirmation(newUser.email);
-
+  const sendEmailVerifyArtist = await authService.sendEmailVerifyArtist(
+    newUser.email,
+    newUser.name
+  );
   res.status(201).json({
     message: "user created",
     newUser,
     sendEmail,
+    sendEmailVerifyArtist,
+  });
+};
+
+const userIsLogin = async (req: Request, res: Response) => {
+  res.status(200).json({
+    message: "user is login",
   });
 };
 
 const loginWithDecorators = withErrorHandlingDecorator(login);
 const signoutWithDecorators = withErrorHandlingDecorator(signout);
 const createAccountWithDecorators = withErrorHandlingDecorator(createAccount);
+const userIsLoginWithDecorators = withErrorHandlingDecorator(userIsLogin);
 
 export const authController = {
   login: loginWithDecorators,
   signout: signoutWithDecorators,
   createAccount: createAccountWithDecorators,
+  userIsLogin: userIsLoginWithDecorators,
 };

@@ -54,6 +54,10 @@ export const authValidate: any = async (
       if (!artist?.emailConfirmation) {
         res.status(403).json({ message: "confirm email" });
       }
+
+      if (!artist?.verifyArtist) {
+        res.status(403).json({ message: "verify artist" });
+      }
       if (sessionIsValid.artistId) {
         req.user = {
           artistId: sessionIsValid.artistId,

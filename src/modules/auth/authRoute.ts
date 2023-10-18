@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { authController } from "./authController";
+import { authValidate } from "../../middlewares/authMiddlewares";
 const routes = Router();
 
 routes
   .post("/login", authController.login)
-  .get("/signout", authController.signout)
-  .post("/create", authController.createAccount);
+  .get("/signout", authValidate, authController.signout)
+  .post("/create", authController.createAccount)
+  .get("/userIsLogin", authValidate, authController.userIsLogin);
 
 export const authRoute = routes;

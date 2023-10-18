@@ -4,6 +4,7 @@ import { withErrorHandlingDecorator } from "../../decorators/withErrorHandlingDe
 import { connectionAws } from "../../utils/configAws";
 import artistDAO from "./artistDAO";
 import { prisma } from "../../database/initialConfig";
+import artistService from "./artistService";
 const uploadAvatar = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
   //@ts-ignore
@@ -87,7 +88,8 @@ const getProfileAndProducts = async (req: Request, res: Response) => {
   //@ts-ignore
   const page = parseInt(req.query.page || "1");
   //@ts-ignore
-  const artistId = parseInt(req.query.page || "1");
+  console.log(req.params);
+  const artistId = parseInt(req.params.id || "1");
   const limit = 12;
 
   const artist = await artistDAO.getProfileAndProducts(artistId, page, limit);
@@ -102,8 +104,13 @@ const getProfileAndProducts = async (req: Request, res: Response) => {
 
 const tokenConfirm = async (req: Request, res: Response) => {
   const token = req.params.token;
-  const userData = jwt.verify(token, process.env.JWT_SECRET_KEY!);
-
+  const userData = await artistService.verifyToken(token);
+  if (!userData) {
+    res.status(404).json({
+      message: "token not exist",
+    });
+    return;
+  }
   await prisma.artist.update({
     where: {
       //@ts-ignore
@@ -118,6 +125,29 @@ const tokenConfirm = async (req: Request, res: Response) => {
   });
 };
 
+const artistConfirm = async (req: Request, res: Response) => {
+  const token = req.params.token;
+  const userData = await artistService.verifyToken(token);
+  if (!userData) {
+    res.status(404).json({
+      message: "token not exist",
+    });
+    return;
+  }
+  await prisma.artist.update({
+    where: {
+      //@ts-ignore
+      email: userData.email,
+    },
+    data: {
+      verifyArtist: true,
+    },
+  });
+  res.status(200).json({
+    message: "verify artist",
+  });
+};
+
 const uploadAvatarWithDecorators = withErrorHandlingDecorator(uploadAvatar);
 const uploadBannerWithDecorators = withErrorHandlingDecorator(uploadBanner);
 const getProfileWithDecorators = withErrorHandlingDecorator(getProfile);
@@ -127,6 +157,7 @@ const getProfileAndProductsWithDecorators = withErrorHandlingDecorator(
   getProfileAndProducts
 );
 const tokenConfirmWithDecorators = withErrorHandlingDecorator(tokenConfirm);
+const artistConfirmWithDecorators = withErrorHandlingDecorator(artistConfirm);
 
 export const artistController = {
   uploadAvatar: uploadAvatarWithDecorators,
@@ -136,4 +167,5 @@ export const artistController = {
   getAll: getAllWithDecorators,
   getProfileAndProducts: getProfileAndProductsWithDecorators,
   tokenConfirm: tokenConfirmWithDecorators,
+  artistConfirm: artistConfirmWithDecorators,
 };

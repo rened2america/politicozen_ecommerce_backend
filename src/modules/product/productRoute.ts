@@ -16,6 +16,8 @@ routes
     express.raw({ type: "application/json" }),
     productController.webhook
   )
+  .put("/", authValidate, productController.update)
+  .delete("/:productId", authValidate, productController.delete)
   .get("/:id", productController.getById);
 
 export const productRoute = routes;

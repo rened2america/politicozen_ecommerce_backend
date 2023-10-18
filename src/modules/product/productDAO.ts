@@ -31,6 +31,18 @@ class ProductDAO {
         take: page.limit,
         where: {
           AND: filters,
+          // AND: {
+          //   artist: {
+          //     OR: [
+          //       {
+          //         name: "Rene Alberto Meza Escamilla",
+          //       },
+          //       {
+          //         name: "Rene Meza",
+          //       },
+          //     ],
+          //   },
+          // },
         },
         include: {
           design: true,
@@ -64,6 +76,7 @@ class ProductDAO {
         },
         sizes: true,
         colors: true,
+        tag: true,
       },
     });
     console.log("allProducts", allProducts);

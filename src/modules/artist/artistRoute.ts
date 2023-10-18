@@ -27,5 +27,7 @@ routes
   .put("/profile", authValidate, artistController.updateProfile)
   .get("/all", artistController.getAll)
   .get("/store/:id", artistController.getProfileAndProducts)
+  .get("/verify/:token", artistController.artistConfirm)
   .get("/:token", artistController.tokenConfirm);
+
 export const artistRoute = routes;

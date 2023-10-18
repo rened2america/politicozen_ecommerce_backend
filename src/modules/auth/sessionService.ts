@@ -82,12 +82,24 @@ class SessionService {
   };
 
   deleteByAccessToken = async (accessToken: string) => {
-    const accessTokenDecode = jwt.verify(
-      accessToken,
-      process.env.JWT_SECRET_KEY!
-    ) as JwtPayload;
+    const accessTokenDecode = await this.verifyToken(accessToken);
     await SessionDAO.deleteByAccessCode(accessTokenDecode.code);
   };
+
+  verifyToken = async (accessToken: string) => {
+    if (accessToken) {
+      try {
+        return jwt.verify(
+          accessToken,
+          process.env.JWT_SECRET_KEY!
+        ) as JwtPayload;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   deleteById = async (id: number) => {
     await SessionDAO.deleteById(id);
   };

@@ -11,7 +11,7 @@ import { connectionAws } from "../../utils/configAws";
 import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
 const create = async (req: Request, res: Response) => {
-  const { x, y, angle, scale } = req.body;
+  const { x, y, angle, scale, tags, type } = req.body;
   const xDecimal = round(x, 6);
   const yDecimal = round(y, 6);
   const angleDecimal = round(angle, 6);
@@ -43,6 +43,11 @@ const create = async (req: Request, res: Response) => {
     productName
   );
 
+  const tagOperations = tags.map((tagValue) => ({
+    where: { value: tagValue },
+    create: { value: tagValue },
+  }));
+
   // const imgListProducts = req.body.imgListProduct.map((imgProduct: any) => {
   //   return Buffer.from(imgProduct.split(",")[1], "base64");
   // });
@@ -57,7 +62,17 @@ const create = async (req: Request, res: Response) => {
     description: productDescription,
     artistId: artistId,
     idGeneral: generateCode(),
-
+    tag: {
+      connectOrCreate: tagOperations,
+    },
+    types: {
+      connectOrCreate: [
+        {
+          where: { value: type },
+          create: { value: type },
+        },
+      ],
+    },
     sizes: {
       connectOrCreate: [
         {
@@ -150,21 +165,23 @@ const getAll = async (req: Request, res: Response) => {
     const arrayFilter = filterEntries.map((entry: any) => {
       const newFilter = {};
 
-      if (entry[0] === "artistId") {
+      if (entry[0] === "artist") {
         //@ts-ignore
         newFilter[entry[0]] = {
-          in: entry[1],
+          OR: entry[1],
         };
         return newFilter;
+      } else {
+        newFilter[entry[0]] = {
+          some: {
+            value: {
+              in: entry[1],
+            },
+          },
+        };
       }
       //@ts-ignore
-      newFilter[entry[0]] = {
-        some: {
-          value: {
-            in: entry[1],
-          },
-        },
-      };
+
       return newFilter;
     });
     arrayFilter.push({
@@ -172,6 +189,7 @@ const getAll = async (req: Request, res: Response) => {
         contains: search,
       },
     });
+    console.log(arrayFilter);
     const products = await productService.getAll(arrayFilter, { page, limit });
     res.status(201).json({
       message: "Productos Obtenidos",
@@ -245,6 +263,7 @@ const webhook = async (req: Request, res: Response) => {
           priceId: product.price.id,
         },
       });
+      //@ts-ignore
       await prisma.order.create({
         data: {
           city: user.address.city ? user.address.city : "",
@@ -275,14 +294,53 @@ const webhook = async (req: Request, res: Response) => {
 
 const getOrders = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
+  const today = new Date();
+  const firstDayOfCurrentMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+  const firstDayOfLastMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+  const lastDayOfLastMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    0
+  );
+  // const ordersCount = await prisma.order.count({
+  //   where: {
+  //     artistId,
+  //   },
+  // });
+  // const orders = await prisma.order.findMany({
+  //   where: {
+  //     artistId,
+  //   },
+  // });
+
   const ordersCount = await prisma.order.count({
     where: {
       artistId,
+      createdAt: {
+        gte: firstDayOfLastMonth,
+        lte: lastDayOfLastMonth,
+      },
     },
   });
+
   const orders = await prisma.order.findMany({
     where: {
       artistId,
+      createdAt: {
+        gte: firstDayOfLastMonth,
+        lte: lastDayOfLastMonth,
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
     },
   });
 
@@ -290,10 +348,100 @@ const getOrders = async (req: Request, res: Response) => {
     (sum, order) => sum + parseInt(order.amount),
     0
   );
+  let normalizeOrders = [];
+  const daysOfMonth = lastDayOfLastMonth.getDate();
+  console.log(daysOfMonth);
+
+  for (let i = 1; i <= daysOfMonth; i++) {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const findDate = orders.filter((order) => {
+      return new Date(order.createdAt).getDate() === i;
+    });
+    if (findDate.length > 0) {
+      normalizeOrders.push({
+        time: `${year}-${month}-${String(i).padStart(2, "0")}`,
+        value: findDate.length,
+      });
+    } else {
+      normalizeOrders.push({
+        time: `${year}-${month}-${String(i).padStart(2, "0")}`,
+        value: 0,
+      });
+    }
+  }
+
   res.status(201).json({
     amount: totalAmount,
     countSales: ordersCount,
     orders,
+    normalizeOrders,
+  });
+};
+
+const update = async (req: Request, res: Response) => {
+  const productFromUser = req.body;
+  const artistId = req.user.artistId;
+
+  console.log("productFromUser:", productFromUser);
+  const product = await prisma.product.findUnique({
+    where: {
+      id: productFromUser.id,
+      artistId,
+    },
+    include: {
+      tag: true, // Esto incluye las etiquetas actuales del producto en la respuesta.
+    },
+  });
+  const tagOperations = productFromUser.tags.map((tagValue) => ({
+    where: { value: tagValue },
+    create: { value: tagValue },
+  }));
+  const updatedProduct = await prisma.product.update({
+    where: {
+      id: productFromUser.id,
+    },
+    data: {
+      title: productFromUser.title,
+      description: productFromUser.description,
+      tag: {
+        disconnect: product.tag.map((tag) => ({ id: tag.id })),
+        connectOrCreate: tagOperations,
+      },
+    },
+    include: {
+      tag: true,
+    },
+  });
+
+  console.log("product update", updatedProduct);
+  res.status(201).json({
+    message: "Product Updated",
+  });
+};
+
+const deleteProduct = async (req: Request, res: Response) => {
+  console.log("aqui estoy");
+  const productId = req.params.productId
+    ? parseInt(req.params.productId)
+    : null;
+  console.log("hola", req.user);
+  const artistId = req.user.artistId;
+
+  console.log("artist", artistId);
+  console.log("productId", productId);
+
+  if (productId) {
+    await prisma.product.delete({
+      where: {
+        id: productId,
+        artistId,
+      },
+    });
+  }
+  res.status(201).json({
+    message: "Product delete",
   });
 };
 
@@ -304,6 +452,8 @@ const getByIdWithDecorators = withErrorHandlingDecorator(getById);
 const sessionWithDecorators = withErrorHandlingDecorator(session);
 const webhookWithDecorators = withErrorHandlingDecorator(webhook);
 const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
+const updateWithDecorators = withErrorHandlingDecorator(update);
+const deleteWithDecorators = withErrorHandlingDecorator(deleteProduct);
 
 export const productController = {
   create: createWithDecorators,
@@ -313,4 +463,6 @@ export const productController = {
   session: sessionWithDecorators,
   webhook: webhookWithDecorators,
   getOrders: getOrdersWithDecorators,
+  update: updateWithDecorators,
+  delete: deleteWithDecorators,
 };
