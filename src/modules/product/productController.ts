@@ -66,12 +66,10 @@ const create = async (req: Request, res: Response) => {
       connectOrCreate: tagOperations,
     },
     types: {
-      connectOrCreate: [
-        {
-          where: { value: type },
-          create: { value: type },
-        },
-      ],
+      connectOrCreate: {
+        where: { value: type },
+        create: { value: type },
+      },
     },
     sizes: {
       connectOrCreate: [
