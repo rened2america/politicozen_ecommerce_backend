@@ -24,10 +24,6 @@ const generateCode_1 = require("../../utils/generateCode");
 const authService_1 = __importDefault(require("./authService"));
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body.email, req.body.password);
-    // const payload = {
-    //   email: "renemeza.escamilla@gmail.com",
-    //   password: "123456",
-    // };
     const payload = {
         email: req.body.email,
         password: req.body.password,
@@ -57,8 +53,16 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         console.log("2sessionIsValid", sessionIsValid);
         if (sessionIsValid) {
             res
-                .cookie("accessToken", sessionIsValid.accessToken, { httpOnly: true })
-                .cookie("refreshToken", sessionIsValid.refreshToken, { httpOnly: true })
+                .cookie("accessToken", sessionIsValid.accessToken, {
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+            })
+                .cookie("refreshToken", sessionIsValid.refreshToken, {
+                httpOnly: true,
+                sameSite: "none",
+                secure: true,
+            })
                 .status(authResponse_1.ARTISTI_LOGIN.status)
                 .json({
                 meesage: authResponse_1.ARTISTI_LOGIN.message,
@@ -93,8 +97,16 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         accessToken,
     };
     res
-        .cookie("accessToken", accessToken, { httpOnly: true })
-        .cookie("refreshToken", refreshToken, { httpOnly: true })
+        .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+    })
+        .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        sameSite: "none",
+        secure: true,
+    })
         .status(authResponse_1.ARTISTI_LOGIN.status)
         .json(Object.assign({ meesage: authResponse_1.ARTISTI_LOGIN.message }, responseData));
 });
@@ -116,17 +128,26 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const passwordToSave = yield authService_1.default.encryptPassword(password);
     const newUser = yield authService_1.default.createUser(Object.assign(Object.assign({}, user), { password: passwordToSave }));
     const sendEmail = yield authService_1.default.sendEmailConfirmation(newUser.email);
+    const sendEmailVerifyArtist = yield authService_1.default.sendEmailVerifyArtist(newUser.email, newUser.name);
     res.status(201).json({
         message: "user created",
         newUser,
         sendEmail,
+        sendEmailVerifyArtist,
+    });
+});
+const userIsLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.status(200).json({
+        message: "user is login",
     });
 });
 const loginWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(login);
 const signoutWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(signout);
 const createAccountWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(createAccount);
+const userIsLoginWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(userIsLogin);
 exports.authController = {
     login: loginWithDecorators,
     signout: signoutWithDecorators,
     createAccount: createAccountWithDecorators,
+    userIsLogin: userIsLoginWithDecorators,
 };

@@ -1,4 +1,4 @@
-import { Session } from "@prisma/client";
+// import { Session } from "@prisma/client";
 import { prisma } from "../../database/initialConfig";
 import { CreateSession, SessionCreated } from "./authDTO";
 
@@ -14,7 +14,7 @@ class SessionDAO {
     return sessionCreated;
   };
 
-  getByArtistId = async (artistId: number): Promise<Session | null> => {
+  getByArtistId = async (artistId: number): Promise<any | null> => {
     const session = await prisma.session.findUnique({
       where: {
         artistId,
@@ -26,7 +26,7 @@ class SessionDAO {
   getByAccessTokenAndRefreshToken = async (
     accessCode: string,
     refreshCode: string
-  ): Promise<Session | null> => {
+  ): Promise<any | null> => {
     const session = await prisma.session.findUnique({
       where: {
         accessCode,

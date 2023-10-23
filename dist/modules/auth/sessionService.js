@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+// import { Session } from "@prisma/client";
 const SessionDAO_1 = __importDefault(require("./SessionDAO"));
 const generateCode_1 = require("../../utils/generateCode");
 const SECONDS_TO_MINUTE = 60;
@@ -20,6 +21,7 @@ const MINUTE_TO_HOUR = SECONDS_TO_MINUTE * 60;
 const HOUR_TO_DAY = MINUTE_TO_HOUR * 24;
 const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
+console.log(DAY_TO_YEAR);
 class SessionService {
     constructor() {
         this.getByArtistId = (artistId) => __awaiter(this, void 0, void 0, function* () {
@@ -62,7 +64,7 @@ class SessionService {
         this.getAccessToken = (accessCode) => {
             const encryptedAccessCode = accessCode;
             const jwtEncryptedAccessCode = jsonwebtoken_1.default.sign({
-                exp: Math.floor(Date.now() / 1000) + DAY_TO_MONTH,
+                exp: Math.floor(Date.now() / 1000) + 100000,
                 code: encryptedAccessCode,
             }, process.env.JWT_SECRET_KEY);
             return jwtEncryptedAccessCode;
@@ -70,14 +72,25 @@ class SessionService {
         this.getRefreshToken = (refreshCode) => {
             const encryptedRefreshCode = refreshCode;
             const jwtEncryptedRefreshCode = jsonwebtoken_1.default.sign({
-                exp: Math.floor(Date.now() / 1000) + DAY_TO_YEAR,
+                exp: Math.floor(Date.now() / 1000) + 100000,
                 code: encryptedRefreshCode,
             }, process.env.JWT_SECRET_KEY);
             return jwtEncryptedRefreshCode;
         };
         this.deleteByAccessToken = (accessToken) => __awaiter(this, void 0, void 0, function* () {
-            const accessTokenDecode = jsonwebtoken_1.default.verify(accessToken, process.env.JWT_SECRET_KEY);
+            const accessTokenDecode = yield this.verifyToken(accessToken);
             yield SessionDAO_1.default.deleteByAccessCode(accessTokenDecode.code);
+        });
+        this.verifyToken = (accessToken) => __awaiter(this, void 0, void 0, function* () {
+            if (accessToken) {
+                try {
+                    return jsonwebtoken_1.default.verify(accessToken, process.env.JWT_SECRET_KEY);
+                }
+                catch (error) {
+                    return null;
+                }
+            }
+            return null;
         });
         this.deleteById = (id) => __awaiter(this, void 0, void 0, function* () {
             yield SessionDAO_1.default.deleteById(id);

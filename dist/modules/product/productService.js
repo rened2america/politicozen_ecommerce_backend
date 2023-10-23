@@ -23,13 +23,65 @@ class ProductService {
             const getProducts = yield productDAO_1.default.getByUser(artistId);
             return getProducts;
         });
-        this.getAll = () => __awaiter(this, void 0, void 0, function* () {
-            const getProducts = yield productDAO_1.default.getAll();
+        this.getAll = (filters, page) => __awaiter(this, void 0, void 0, function* () {
+            const getProducts = yield productDAO_1.default.getAll(filters, page);
             return getProducts;
         });
-        this.getById = (id, variant) => __awaiter(this, void 0, void 0, function* () {
-            const getProducts = yield productDAO_1.default.getById(id, variant);
+        this.getById = (id, variant, size) => __awaiter(this, void 0, void 0, function* () {
+            const getProducts = yield productDAO_1.default.getById(id, variant, size);
             return getProducts;
+        });
+        this.uploadLogo = (logo, s3, productName) => __awaiter(this, void 0, void 0, function* () {
+            const paramsImgLogo = {
+                Bucket: process.env.BUCKET_IMG,
+                Key: `${Date.now().toString()}-${productName}-logo`,
+                Body: Buffer.from(logo, "base64"),
+                ContentType: "image/png", // Cambia esto según el tipo de imagen
+            };
+            const imgLogoURL = yield s3.upload(paramsImgLogo).promise();
+            return imgLogoURL.Location;
+        });
+        this.uploadImages = (images, productName, s3) => __awaiter(this, void 0, void 0, function* () {
+            const uploadedImages = images.map((image) => __awaiter(this, void 0, void 0, function* () {
+                const paramsImg = {
+                    Bucket: process.env.BUCKET_IMG,
+                    Key: `${Date.now().toString()}-${productName}-product-${image.color}`,
+                    Body: image.imgBuffer,
+                    ContentType: "image/png", // Cambia esto según el tipo de imagen
+                };
+                const imgProductURL = yield s3.upload(paramsImg).promise();
+                return Object.assign(Object.assign({}, image), { imgProductURL: imgProductURL.Location });
+            }));
+            return Promise.all(uploadedImages);
+        });
+        this.transformImagesFromBase64ToBuffer = (images) => __awaiter(this, void 0, void 0, function* () {
+            return Object.keys(images).map((keyValue) => {
+                const imgBuffer = Buffer.from(images[keyValue].split(",")[1], "base64");
+                return {
+                    imgBuffer,
+                    color: keyValue,
+                };
+            });
+        });
+        this.createProductInStripe = (products, stripe, productName) => __awaiter(this, void 0, void 0, function* () {
+            const productsCreated = products.map((product) => __awaiter(this, void 0, void 0, function* () {
+                const sizeOptions = ["S", "M", "L"];
+                console;
+                const productsWithSize = sizeOptions.map((size) => __awaiter(this, void 0, void 0, function* () {
+                    const newProduct = yield stripe.products.create({
+                        name: `${productName}-${product.color}-${size}-product`,
+                        images: [product.imgProductURL],
+                    });
+                    const priceProduct = yield stripe.prices.create({
+                        product: newProduct.id,
+                        currency: "usd",
+                        unit_amount: 3000,
+                    });
+                    return Object.assign(Object.assign({ size }, product), priceProduct);
+                }));
+                return Promise.all(productsWithSize);
+            }));
+            return Promise.all(productsCreated);
         });
     }
 }

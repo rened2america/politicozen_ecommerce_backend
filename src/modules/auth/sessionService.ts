@@ -1,5 +1,5 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { Session } from "@prisma/client";
+// import { Session } from "@prisma/client";
 import SessionDAO from "./SessionDAO";
 import { generateCode } from "../../utils/generateCode";
 
@@ -10,7 +10,7 @@ const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
 console.log(DAY_TO_YEAR);
 class SessionService {
-  getByArtistId = async (artistId: number): Promise<Session | null> => {
+  getByArtistId = async (artistId: number): Promise<any | null> => {
     const session = await SessionDAO.getByArtistId(artistId);
     return session;
   };

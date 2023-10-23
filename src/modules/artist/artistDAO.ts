@@ -1,9 +1,9 @@
-import { Artist } from "@prisma/client";
+// import { Artist } from "@prisma/client";
 import { prisma } from "../../database/initialConfig";
 
 class ArtistDAO {
-  getArtistByEmail = async (email: string): Promise<Artist | null> => {
-    const artist: Artist | null = await prisma.artist.findUnique({
+  getArtistByEmail = async (email: string): Promise<any | null> => {
+    const artist: any | null = await prisma.artist.findUnique({
       where: {
         email,
       },
@@ -12,8 +12,8 @@ class ArtistDAO {
     return artist;
   };
 
-  getArtistById = async (id: number): Promise<Artist | null> => {
-    const artist: Artist | null = await prisma.artist.findUnique({
+  getArtistById = async (id: number): Promise<any | null> => {
+    const artist: any | null = await prisma.artist.findUnique({
       where: {
         id,
       },
@@ -21,8 +21,8 @@ class ArtistDAO {
 
     return artist;
   };
-  updateArtist = async (id: number, data: any): Promise<Artist | null> => {
-    const artist: Artist | null = await prisma.artist.update({
+  updateArtist = async (id: number, data: any): Promise<any | null> => {
+    const artist: any | null = await prisma.artist.update({
       where: {
         id,
       },
@@ -33,7 +33,7 @@ class ArtistDAO {
   getAll = async (
     page: number,
     limit: number
-  ): Promise<{ artists: Artist[]; count: number } | null> => {
+  ): Promise<{ artists: any[]; count: number } | null> => {
     console.log(page);
     const [artists, count] = await prisma.$transaction([
       prisma.artist.findMany({

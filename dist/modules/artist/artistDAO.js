@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// import { Artist } from "@prisma/client";
 const initialConfig_1 = require("../../database/initialConfig");
 class ArtistDAO {
     constructor() {
@@ -19,6 +20,63 @@ class ArtistDAO {
                 },
             });
             return artist;
+        });
+        this.getArtistById = (id) => __awaiter(this, void 0, void 0, function* () {
+            const artist = yield initialConfig_1.prisma.artist.findUnique({
+                where: {
+                    id,
+                },
+            });
+            return artist;
+        });
+        this.updateArtist = (id, data) => __awaiter(this, void 0, void 0, function* () {
+            const artist = yield initialConfig_1.prisma.artist.update({
+                where: {
+                    id,
+                },
+                data,
+            });
+            return artist;
+        });
+        this.getAll = (page, limit) => __awaiter(this, void 0, void 0, function* () {
+            console.log(page);
+            const [artists, count] = yield initialConfig_1.prisma.$transaction([
+                initialConfig_1.prisma.artist.findMany({
+                    skip: (page - 1) * limit,
+                    take: limit,
+                }),
+                initialConfig_1.prisma.artist.count(),
+            ]);
+            return {
+                artists: artists,
+                count: count,
+            };
+        });
+        this.getProfileAndProducts = (id, page, limit) => __awaiter(this, void 0, void 0, function* () {
+            console.log(id);
+            const [products, count, profile] = yield initialConfig_1.prisma.$transaction([
+                initialConfig_1.prisma.product.findMany({
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    where: {
+                        artistId: id,
+                    },
+                    include: {
+                        design: true,
+                    },
+                }),
+                initialConfig_1.prisma.product.count(),
+                initialConfig_1.prisma.artist.findUnique({
+                    where: {
+                        id,
+                    },
+                }),
+            ]);
+            return {
+                products,
+                count,
+                profile,
+            };
         });
     }
 }

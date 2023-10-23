@@ -15,10 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authValidate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sessionService_1 = __importDefault(require("../modules/auth/sessionService"));
+const initialConfig_1 = require("../database/initialConfig");
 const authValidate = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Validar si el token ya expiro
-        // validad si el accesCode es valido
+        // // Validar si el token ya expiro
+        // // validad si el accesCode es valido
         const accessToken = req.cookies.accessToken;
         const refreshToken = req.cookies.refreshToken;
         if (!accessToken || !refreshToken) {
@@ -28,11 +29,11 @@ const authValidate = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         // //"emDgcBoq4Vv_w2ecS-Egz"
         // jwt.verify(refreshToken, "emDgcBoq4Vv_w2ecS-Egz");
         // jwt.verify(accessToken, "emDgcBoq4Vv_w2ecS-Egz");
-        console.log("Decode");
         const accessTokenDecode = jsonwebtoken_1.default.decode(accessToken);
         const refreshTokenDecode = jsonwebtoken_1.default.decode(refreshToken);
         console.log(accessTokenDecode, refreshTokenDecode);
         console.log("String");
+        console.log();
         if (!accessTokenDecode ||
             typeof accessTokenDecode === "string" ||
             !refreshTokenDecode ||
@@ -43,6 +44,18 @@ const authValidate = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         console.log("after String");
         const sessionIsValid = yield sessionService_1.default.isValid(accessTokenDecode, refreshTokenDecode, accessToken, refreshToken);
         if (sessionIsValid) {
+            console.log("sessionIsValid", sessionIsValid);
+            const artist = yield initialConfig_1.prisma.artist.findUnique({
+                where: {
+                    id: sessionIsValid.artistId,
+                },
+            });
+            if (!(artist === null || artist === void 0 ? void 0 : artist.emailConfirmation)) {
+                res.status(403).json({ message: "confirm email" });
+            }
+            if (!(artist === null || artist === void 0 ? void 0 : artist.verifyArtist)) {
+                res.status(403).json({ message: "verify artist" });
+            }
             if (sessionIsValid.artistId) {
                 req.user = {
                     artistId: sessionIsValid.artistId,
@@ -51,9 +64,13 @@ const authValidate = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
             res
                 .cookie("accessToken", sessionIsValid.accessToken, {
                 httpOnly: true,
+                sameSite: "none",
+                secure: true,
             })
                 .cookie("refreshToken", sessionIsValid.refreshToken, {
                 httpOnly: true,
+                sameSite: "none",
+                secure: true,
             });
             return next();
         }

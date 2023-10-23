@@ -16,7 +16,7 @@ class AuthCookie {
         this.getAccessToken = (accessCode) => {
             const encryptedAccessCode = accessCode;
             const jwtEncryptedAccessCode = jsonwebtoken_1.default.sign({
-                exp: Math.floor(Date.now() / 1000) + 60,
+                exp: Math.floor(Date.now() / 1000) + 100000,
                 code: encryptedAccessCode,
             }, process.env.JWT_SECRET_KEY);
             return jwtEncryptedAccessCode;
@@ -24,7 +24,7 @@ class AuthCookie {
         this.getRefreshToken = (refreshCode) => {
             const encryptedRefreshCode = refreshCode;
             const jwtEncryptedRefreshCode = jsonwebtoken_1.default.sign({
-                exp: Math.floor(Date.now() / 1000) + 120,
+                exp: Math.floor(Date.now() / 1000) + 100000,
                 code: encryptedRefreshCode,
             }, process.env.JWT_SECRET_KEY);
             return jwtEncryptedRefreshCode;

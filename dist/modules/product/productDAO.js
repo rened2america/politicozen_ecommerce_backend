@@ -26,18 +26,52 @@ class ProductDAO {
         });
         this.getByUser = (artistId) => __awaiter(this, void 0, void 0, function* () {
             console.log(artistId);
-            const allProducts = yield initialConfig_1.prisma.product.findMany();
-            return allProducts;
-        });
-        this.getAll = () => __awaiter(this, void 0, void 0, function* () {
             const allProducts = yield initialConfig_1.prisma.product.findMany({
-                include: {
-                    design: true,
+                where: {
+                    artistId,
                 },
             });
             return allProducts;
         });
-        this.getById = (id, variant) => __awaiter(this, void 0, void 0, function* () {
+        this.getAll = (filters, page) => __awaiter(this, void 0, void 0, function* () {
+            console.log(page);
+            const [allProducts, count] = yield initialConfig_1.prisma.$transaction([
+                initialConfig_1.prisma.product.findMany({
+                    skip: (page.page - 1) * page.limit,
+                    take: page.limit,
+                    where: {
+                        AND: filters,
+                        // AND: {
+                        //   artist: {
+                        //     OR: [
+                        //       {
+                        //         name: "Rene Alberto Meza Escamilla",
+                        //       },
+                        //       {
+                        //         name: "Rene Meza",
+                        //       },
+                        //     ],
+                        //   },
+                        // },
+                    },
+                    include: {
+                        design: true,
+                        tag: true,
+                        types: true,
+                        artist: true,
+                    },
+                }),
+                initialConfig_1.prisma.product.count({
+                    where: {
+                        AND: filters,
+                    },
+                }),
+            ]);
+            console.log(count);
+            return { products: allProducts, count: count };
+        });
+        this.getById = (id, variant, size) => __awaiter(this, void 0, void 0, function* () {
+            console.log("getById", id);
             const allProducts = yield initialConfig_1.prisma.product.findUnique({
                 where: {
                     id,
@@ -46,10 +80,15 @@ class ProductDAO {
                     design: {
                         where: {
                             variant,
+                            size,
                         },
                     },
+                    sizes: true,
+                    colors: true,
+                    tag: true,
                 },
             });
+            console.log("allProducts", allProducts);
             return allProducts;
         });
     }

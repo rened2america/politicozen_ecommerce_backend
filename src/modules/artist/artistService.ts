@@ -1,11 +1,11 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { Artist } from "@prisma/client";
+// import { Artist } from "@prisma/client";
 import artistDAO from "./artistDAO";
 
 class ArtistService {
-  getArtistByEmail = async (email: string): Promise<Artist | null> => {
-    const artistExist: Artist | null = await artistDAO.getArtistByEmail(email);
+  getArtistByEmail = async (email: string): Promise<any | null> => {
+    const artistExist: any | null = await artistDAO.getArtistByEmail(email);
     return artistExist;
   };
 
