@@ -1,5 +1,5 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { Session } from "@prisma/client";
+// import { Session } from "@prisma/client";
 import SessionDAO from "./SessionDAO";
 import { generateCode } from "../../utils/generateCode";
 
@@ -8,9 +8,9 @@ const MINUTE_TO_HOUR = SECONDS_TO_MINUTE * 60;
 const HOUR_TO_DAY = MINUTE_TO_HOUR * 24;
 const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
-
+console.log(DAY_TO_YEAR);
 class SessionService {
-  getByArtistId = async (artistId: number): Promise<Session | null> => {
+  getByArtistId = async (artistId: number): Promise<any | null> => {
     const session = await SessionDAO.getByArtistId(artistId);
     return session;
   };
@@ -61,32 +61,45 @@ class SessionService {
     const encryptedAccessCode = accessCode;
     const jwtEncryptedAccessCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + DAY_TO_MONTH,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedAccessCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedAccessCode;
   };
+
   getRefreshToken = (refreshCode: string) => {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + DAY_TO_YEAR,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedRefreshCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedRefreshCode;
   };
 
   deleteByAccessToken = async (accessToken: string) => {
-    const accessTokenDecode = jwt.verify(
-      accessToken,
-      "emDgcBoq4Vv_w2ecS-Egz"
-    ) as JwtPayload;
+    const accessTokenDecode = await this.verifyToken(accessToken);
     await SessionDAO.deleteByAccessCode(accessTokenDecode.code);
   };
+
+  verifyToken = async (accessToken: string) => {
+    if (accessToken) {
+      try {
+        return jwt.verify(
+          accessToken,
+          process.env.JWT_SECRET_KEY!
+        ) as JwtPayload;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  };
+
   deleteById = async (id: number) => {
     await SessionDAO.deleteById(id);
   };

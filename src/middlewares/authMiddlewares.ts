@@ -1,23 +1,16 @@
 import jwt from "jsonwebtoken";
 import { Response, Request, NextFunction } from "express";
 import sessionService from "../modules/auth/sessionService";
-
-interface CustomRequest extends Request {
-  user: {
-    artistId: number;
-    // Agrega otras propiedades si es necesario
-  };
-}
+import { prisma } from "../database/initialConfig";
 
 export const authValidate: any = async (
-  req: CustomRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // Validar si el token ya expiro
-    // validad si el accesCode es valido
-    console.log(req.cookies);
+    // // Validar si el token ya expiro
+    // // validad si el accesCode es valido
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
 
@@ -28,13 +21,12 @@ export const authValidate: any = async (
     // //"emDgcBoq4Vv_w2ecS-Egz"
     // jwt.verify(refreshToken, "emDgcBoq4Vv_w2ecS-Egz");
     // jwt.verify(accessToken, "emDgcBoq4Vv_w2ecS-Egz");
-    console.log("Decode");
     const accessTokenDecode = jwt.decode(accessToken);
     const refreshTokenDecode = jwt.decode(refreshToken);
     console.log(accessTokenDecode, refreshTokenDecode);
 
     console.log("String");
-
+    console.log();
     if (
       !accessTokenDecode ||
       typeof accessTokenDecode === "string" ||
@@ -53,6 +45,19 @@ export const authValidate: any = async (
       refreshToken
     );
     if (sessionIsValid) {
+      console.log("sessionIsValid", sessionIsValid);
+      const artist = await prisma.artist.findUnique({
+        where: {
+          id: sessionIsValid.artistId,
+        },
+      });
+      if (!artist?.emailConfirmation) {
+        res.status(403).json({ message: "confirm email" });
+      }
+
+      if (!artist?.verifyArtist) {
+        res.status(403).json({ message: "verify artist" });
+      }
       if (sessionIsValid.artistId) {
         req.user = {
           artistId: sessionIsValid.artistId,
@@ -61,10 +66,15 @@ export const authValidate: any = async (
       res
         .cookie("accessToken", sessionIsValid.accessToken, {
           httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
         })
         .cookie("refreshToken", sessionIsValid.refreshToken, {
           httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
         });
+
       return next();
     }
     res.status(401).send("Hubo un problema");

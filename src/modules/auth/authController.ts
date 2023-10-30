@@ -9,10 +9,13 @@ import { CreateSession, SessionCreated } from "./authDTO";
 import artistService from "../artist/artistService";
 import sessionService from "./sessionService";
 import { generateCode } from "../../utils/generateCode";
-const login = async (_: Request, res: Response) => {
+import authService from "./authService";
+const login = async (req: Request, res: Response) => {
+  console.log(req.body.email, req.body.password);
+
   const payload = {
-    email: "renemeza.escamilla@gmail.com",
-    password: "123456",
+    email: req.body.email,
+    password: req.body.password,
   };
 
   const artistExist = await artistService.getArtistByEmail(payload.email);
@@ -55,8 +58,16 @@ const login = async (_: Request, res: Response) => {
     console.log("2sessionIsValid", sessionIsValid);
     if (sessionIsValid) {
       res
-        .cookie("accessToken", sessionIsValid.accessToken, { httpOnly: true })
-        .cookie("refreshToken", sessionIsValid.refreshToken, { httpOnly: true })
+        .cookie("accessToken", sessionIsValid.accessToken, {
+          httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
+        })
+        .cookie("refreshToken", sessionIsValid.refreshToken, {
+          httpOnly: true,
+          sameSite: "none" as const,
+          secure: true,
+        })
         .status(ARTISTI_LOGIN.status)
         .json({
           meesage: ARTISTI_LOGIN.message,
@@ -75,7 +86,7 @@ const login = async (_: Request, res: Response) => {
   const refreshToken = authCookie.getRefreshToken(refreshCode);
 
   const session: CreateSession = {
-    artistId: 1,
+    artistId: artistExist.id,
     accessCode,
     refreshCode,
     accessToken,
@@ -95,8 +106,16 @@ const login = async (_: Request, res: Response) => {
     accessToken,
   };
   res
-    .cookie("accessToken", accessToken, { httpOnly: true })
-    .cookie("refreshToken", refreshToken, { httpOnly: true })
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "none" as const,
+      secure: true,
+    })
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "none" as const,
+      secure: true,
+    })
     .status(ARTISTI_LOGIN.status)
     .json({ meesage: ARTISTI_LOGIN.message, ...responseData });
 };
@@ -110,9 +129,48 @@ const signout = async (req: Request, res: Response) => {
   });
 };
 
+const createAccount = async (req: Request, res: Response) => {
+  const user = req.body;
+  // const user = {
+  //   name: "Rene Alberto Meza Escamilla",
+  //   email: "rame.rmeza@gmail.com",
+  //   password: "emar16198",
+  // };
+
+  const password = user.password;
+  const passwordToSave = await authService.encryptPassword(password);
+  const newUser = await authService.createUser({
+    ...user,
+    password: passwordToSave,
+  });
+
+  const sendEmail = await authService.sendEmailConfirmation(newUser.email);
+  const sendEmailVerifyArtist = await authService.sendEmailVerifyArtist(
+    newUser.email,
+    newUser.name
+  );
+  res.status(201).json({
+    message: "user created",
+    newUser,
+    sendEmail,
+    sendEmailVerifyArtist,
+  });
+};
+
+const userIsLogin = async (req: Request, res: Response) => {
+  res.status(200).json({
+    message: "user is login",
+  });
+};
+
 const loginWithDecorators = withErrorHandlingDecorator(login);
 const signoutWithDecorators = withErrorHandlingDecorator(signout);
+const createAccountWithDecorators = withErrorHandlingDecorator(createAccount);
+const userIsLoginWithDecorators = withErrorHandlingDecorator(userIsLogin);
+
 export const authController = {
   login: loginWithDecorators,
   signout: signoutWithDecorators,
+  createAccount: createAccountWithDecorators,
+  userIsLogin: userIsLoginWithDecorators,
 };

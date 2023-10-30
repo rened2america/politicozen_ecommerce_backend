@@ -14,10 +14,10 @@ class AuthCookie {
     const encryptedAccessCode = accessCode;
     const jwtEncryptedAccessCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + 60,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedAccessCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedAccessCode;
   };
@@ -25,10 +25,10 @@ class AuthCookie {
     const encryptedRefreshCode = refreshCode;
     const jwtEncryptedRefreshCode = jwt.sign(
       {
-        exp: Math.floor(Date.now() / 1000) + 120,
+        exp: Math.floor(Date.now() / 1000) + 100000,
         code: encryptedRefreshCode,
       },
-      "emDgcBoq4Vv_w2ecS-Egz"
+      process.env.JWT_SECRET_KEY!
     );
     return jwtEncryptedRefreshCode;
   };
