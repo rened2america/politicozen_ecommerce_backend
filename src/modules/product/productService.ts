@@ -63,10 +63,11 @@ class ProductService {
   createProductInStripe = async (
     products: any,
     stripe: any,
-    productName: string
+    productName: string,
+    price: number,
+    sizeOptions: string[]
   ) => {
     const productsCreated = products.map(async (product: any) => {
-      const sizeOptions = ["S", "M", "L"];
       console;
       const productsWithSize = sizeOptions.map(async (size) => {
         const newProduct = await stripe.products.create({
@@ -77,7 +78,7 @@ class ProductService {
         const priceProduct = await stripe.prices.create({
           product: newProduct.id,
           currency: "usd",
-          unit_amount: 3000,
+          unit_amount: price * 100,
         });
         return {
           size,

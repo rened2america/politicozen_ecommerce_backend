@@ -68,12 +68,7 @@ class ProductDAO {
         id,
       },
       include: {
-        design: {
-          where: {
-            variant,
-            size,
-          },
-        },
+        design: true,
         sizes: true,
         colors: true,
         tag: true,

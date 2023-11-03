@@ -20,6 +20,12 @@ app.use(
       "https://app.politicozen.dev/",
       "https://app.politicozen.dev",
       "http://app.politicozen.dev",
+      "https://beta.politicozen.com/",
+      "https://beta.politicozen.com",
+      "http://beta.politicozen.com",
+      "https://app.politicozen.com/",
+      "https://app.politicozen.com",
+      "http://app.politicozen.com",
     ],
   })
 );
