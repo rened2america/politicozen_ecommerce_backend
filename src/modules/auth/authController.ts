@@ -144,16 +144,16 @@ const createAccount = async (req: Request, res: Response) => {
     password: passwordToSave,
   });
 
-  const sendEmail = await authService.sendEmailConfirmation(newUser.email);
-  const sendEmailVerifyArtist = await authService.sendEmailVerifyArtist(
-    newUser.email,
-    newUser.name
-  );
+  // const sendEmail = await authService.sendEmailConfirmation(newUser.email);
+  // const sendEmailVerifyArtist = await authService.sendEmailVerifyArtist(
+  //   newUser.email,
+  //   newUser.name
+  // );
   res.status(201).json({
     message: "user created",
     newUser,
-    sendEmail,
-    sendEmailVerifyArtist,
+    // sendEmail,
+    // sendEmailVerifyArtist,
   });
 };
 
