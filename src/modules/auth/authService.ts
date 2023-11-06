@@ -398,8 +398,10 @@ ul.social li{
             		<td>
             			<div class="text" style="padding: 0 2.5em; text-align: center;">
             				<h2>Please verify your email</h2>
-            				<h3>copy this link : https://app.politicozen.dev/emailconfirm/${jwtToken} or click this button</h3>
-            				<p><a href="https://app.politicozen.dev/emailconfirm/${jwtToken}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify email</a></p>
+            				<h3>copy this link : ${process.env
+                      .URL_DASHBOARD!}/emailconfirm/${jwtToken} or click this button</h3>
+            				<p><a href="${process.env
+                      .URL_DASHBOARD!}/emailconfirm/${jwtToken}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify email</a></p>
             			</div>
             		</td>
             	</tr>
@@ -826,8 +828,10 @@ ul.social li{
             				<h2>Approval request for artist</h2>
             				<h3>Name: ${name}</h2>
             				<h3>Email: ${email}</h2>
-            				<h3>copy this link : https://app.politicozen.dev/verifyartist/${jwtToken} or click this button</h3>
-            				<p><a href="https://app.politicozen.dev/verifyartist/${jwtToken} " style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify artist</a></p>
+            				<h3>copy this link : ${process.env
+                      .URL_DASHBOARD!}/verifyartist/${jwtToken} or click this button</h3>
+            				<p><a href="${process.env
+                      .URL_DASHBOARD!}/verifyartist/${jwtToken} " style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify artist</a></p>
             			</div>
             		</td>
             	</tr>

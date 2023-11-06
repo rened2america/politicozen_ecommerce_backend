@@ -12,11 +12,15 @@ import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
 const create = async (req: Request, res: Response) => {
   const { x, y, angle, scale, tags, type } = req.body;
+  console.log("Distance x", x);
+  console.log("Distance y", y);
   const xDecimal = round(x, 6);
   const yDecimal = round(y, 6);
   const angleDecimal = round(angle, 6);
   const scaleDecimal = round(scale, 6);
 
+  console.log("Distance rounded x", xDecimal);
+  console.log("Distance rounded y", yDecimal);
   const productName = req.body.name;
   const productSubtitle = req.body.subtitle;
   const productDescription = req.body.description;
@@ -24,13 +28,108 @@ const create = async (req: Request, res: Response) => {
   const s3 = connectionAws();
   const stripe = connectionStripe();
 
+  const priceOfProduct = (typeValue: string) => {
+    if (typeValue === "Sweatshirt") {
+      return 25.99;
+    }
+    if (typeValue === "Shirt") {
+      return 15.99;
+    }
+    if (typeValue === "Hoodie") {
+      return 36.99;
+    }
+    if (typeValue === "Mug") {
+      return 24.99;
+    }
+  };
+
+  const sizeofProdut = (typeValue: string) => {
+    if (typeValue === "Mug") {
+      return [
+        {
+          where: { value: "11 oz" },
+          create: { value: "11 oz" },
+        },
+        {
+          where: { value: "15 oz" },
+          create: { value: "15 oz" },
+        },
+      ];
+    }
+
+    return [
+      {
+        where: { value: "S" },
+        create: { value: "S" },
+      },
+      {
+        where: { value: "M" },
+        create: { value: "M" },
+      },
+      {
+        where: { value: "L" },
+        create: { value: "L" },
+      },
+    ];
+  };
+
+  const colorsofProdut = (typeValue: string) => {
+    if (typeValue === "Mug") {
+      return [
+        {
+          where: { value: "White" },
+          create: { value: "White" },
+        },
+      ];
+    }
+
+    return [
+      {
+        where: { value: "White" },
+        create: { value: "White" },
+      },
+      {
+        where: { value: "Beige" },
+        create: { value: "Beige" },
+      },
+      {
+        where: { value: "Red" },
+        create: { value: "Red" },
+      },
+      {
+        where: { value: "Blue" },
+        create: { value: "Blue" },
+      },
+      {
+        where: { value: "Black" },
+        create: { value: "Black" },
+      },
+    ];
+  };
+
+  const imageListFromProduct = (typeValue: string, images: any) => {
+    if (typeValue === "Mug") {
+      return { white: images.white };
+    }
+
+    return images;
+  };
+
+  const sizeOptionsOfProduct = (typeValue: string) => {
+    if (typeValue === "Mug") {
+      return ["11 oz", "15 oz"];
+    }
+
+    return ["S", "M", "L"];
+  };
+
   const logoURL = await productService.uploadLogo(
     req.body.imgLogo,
     s3,
     productName
   );
   const imagesBuffer = await productService.transformImagesFromBase64ToBuffer(
-    req.body.imgListProduct
+    imageListFromProduct(type, req.body.imgListProduct)
   );
   const ImagesUrl = await productService.uploadImages(
     imagesBuffer,
@@ -40,7 +139,9 @@ const create = async (req: Request, res: Response) => {
   const productStripe = await productService.createProductInStripe(
     ImagesUrl,
     stripe,
-    productName
+    productName,
+    priceOfProduct(type),
+    sizeOptionsOfProduct(type)
   );
 
   const tagOperations = tags.map((tagValue) => ({
@@ -48,15 +149,10 @@ const create = async (req: Request, res: Response) => {
     create: { value: tagValue },
   }));
 
-  // const imgListProducts = req.body.imgListProduct.map((imgProduct: any) => {
-  //   return Buffer.from(imgProduct.split(",")[1], "base64");
-  // });
-  // const imgProduct = Buffer.from(req.body.imgProduct.split(",")[1], "base64");
-
   const artistId = req.user.artistId;
-  // // validar si el titulo del producto existe si no existe crear el producto
+
   const newProduct = await productService.create({
-    price: 30,
+    price: priceOfProduct(type),
     title: productName,
     subtitle: productSubtitle,
     description: productDescription,
@@ -72,47 +168,18 @@ const create = async (req: Request, res: Response) => {
       },
     },
     sizes: {
-      connectOrCreate: [
-        {
-          where: { value: "S" },
-          create: { value: "S" },
-        },
-        {
-          where: { value: "M" },
-          create: { value: "M" },
-        },
-        {
-          where: { value: "L" },
-          create: { value: "L" },
-        },
-      ],
+      connectOrCreate: sizeofProdut(type),
     },
     colors: {
-      connectOrCreate: [
-        {
-          where: { value: "White" },
-          create: { value: "White" },
-        },
-        {
-          where: { value: "Beige" },
-          create: { value: "Beige" },
-        },
-        {
-          where: { value: "Red" },
-          create: { value: "Red" },
-        },
-        {
-          where: { value: "Blue" },
-          create: { value: "Blue" },
-        },
-        {
-          where: { value: "Black" },
-          create: { value: "Black" },
-        },
-      ],
+      connectOrCreate: colorsofProdut(type),
     },
   });
+
+  console.log("productStripe", productStripe);
+
   const productsToDb = productStripe.flat().map((product) => {
+    console.log("product", product);
+
     return {
       //@ts-ignore
       productId: newProduct.id,
@@ -121,7 +188,7 @@ const create = async (req: Request, res: Response) => {
       angle: angleDecimal,
       scale: scaleDecimal,
       variant: product.color,
-      price: 30,
+      price: priceOfProduct(type),
       priceId: product.id,
       url: product.imgProductURL,
       urlLogo: logoURL,
@@ -238,8 +305,8 @@ const session = async (req: Request, res: Response) => {
     mode: "payment",
     payment_method_types: ["card"],
     line_items: NormalizeProducts,
-    success_url: "https://politicozen.dev/succes/",
-    cancel_url: "https://politicozen.dev/cancel/",
+    success_url: process.env.URL_ECOMMERCE! + "/succes/",
+    cancel_url: process.env.URL_ECOMMERCE! + "/cancel/",
   });
 
   res
