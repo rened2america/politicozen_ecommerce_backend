@@ -49,14 +49,16 @@ class ArtistDAO {
     };
   };
 
-  getProfileAndProducts = async (id: number, page: number, limit: number) => {
+  getProfileAndProducts = async (id: string, page: number, limit: number) => {
     console.log(id);
     const [products, count, profile] = await prisma.$transaction([
       prisma.product.findMany({
         skip: (page - 1) * limit,
         take: limit,
         where: {
-          artistId: id,
+          artist: {
+            name: id,
+          },
         },
         include: {
           design: true,
@@ -64,9 +66,9 @@ class ArtistDAO {
         },
       }),
       prisma.product.count(),
-      prisma.artist.findUnique({
+      prisma.artist.findFirst({
         where: {
-          id,
+          name: id,
         },
       }),
     ]);

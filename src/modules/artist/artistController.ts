@@ -89,10 +89,12 @@ const getProfileAndProducts = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page || "1");
   //@ts-ignore
   console.log(req.params);
-  const artistId = parseInt(req.params.id || "1");
+  // const artistId = parseInt(req.params.id || "1");
+  const artistName = req.params.id.replace(/-/g, " ");
+
   const limit = 12;
 
-  const artist = await artistDAO.getProfileAndProducts(artistId, page, limit);
+  const artist = await artistDAO.getProfileAndProducts(artistName, page, limit);
 
   res.status(200).json({
     message: "get artist store",
