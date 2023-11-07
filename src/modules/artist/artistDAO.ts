@@ -60,6 +60,7 @@ class ArtistDAO {
         },
         include: {
           design: true,
+          types: true,
         },
       }),
       prisma.product.count(),
