@@ -70,10 +70,66 @@ const create = async (req: Request, res: Response) => {
         where: { value: "L" },
         create: { value: "L" },
       },
+      {
+        where: { value: "XL" },
+        create: { value: "XL" },
+      },
+      {
+        where: { value: "2XL" },
+        create: { value: "2XL" },
+      },
+      {
+        where: { value: "3XL" },
+        create: { value: "3XL" },
+      },
+      {
+        where: { value: "4XL" },
+        create: { value: "4XL" },
+      },
+      {
+        where: { value: "5XL" },
+        create: { value: "5XL" },
+      },
     ];
   };
 
-  const colorsofProdut = (typeValue: string) => {
+  // const colorsofProdut = (typeValue: string, selected:any) => {
+  //   if (typeValue === "Mug") {
+  //     return [
+  //       {
+  //         where: { value: "White" },
+  //         create: { value: "White" },
+  //       },
+  //     ];
+  //   }
+  //   // const valueToReturn = selected.filter(()=> {
+  //   //   return
+  //   // })
+  //   return [
+  //     {
+  //       where: { value: "White" },
+  //       create: { value: "White" },
+  //     },
+  //     {
+  //       where: { value: "Beige" },
+  //       create: { value: "Beige" },
+  //     },
+  //     {
+  //       where: { value: "Red" },
+  //       create: { value: "Red" },
+  //     },
+  //     {
+  //       where: { value: "Blue" },
+  //       create: { value: "Blue" },
+  //     },
+  //     {
+  //       where: { value: "Black" },
+  //       create: { value: "Black" },
+  //     },
+  //   ];
+  // };
+  const colorsofProdut = (typeValue: string, selected: any) => {
+    // Si el tipo es "Mug", retorna un array con solo el color "White"
     if (typeValue === "Mug") {
       return [
         {
@@ -83,35 +139,47 @@ const create = async (req: Request, res: Response) => {
       ];
     }
 
-    return [
-      {
-        where: { value: "White" },
-        create: { value: "White" },
-      },
-      {
-        where: { value: "Beige" },
-        create: { value: "Beige" },
-      },
-      {
-        where: { value: "Red" },
-        create: { value: "Red" },
-      },
-      {
-        where: { value: "Blue" },
-        create: { value: "Blue" },
-      },
-      {
-        where: { value: "Black" },
-        create: { value: "Black" },
-      },
-    ];
+    // Array para almacenar los colores seleccionados
+    const colorsToReturn = [];
+
+    // Iterar sobre los colores en 'selected'
+    for (const color in selected) {
+      // Verificar si el color está seleccionado
+      if (selected[color]) {
+        // Convertir la clave de 'selected' a formato de texto capitalizado
+        const colorCapitalized = color.charAt(0).toUpperCase() + color.slice(1);
+
+        // Agregar el color al array
+        colorsToReturn.push({
+          where: { value: colorCapitalized },
+          create: { value: colorCapitalized },
+        });
+      }
+    }
+
+    return colorsToReturn;
   };
 
-  const imageListFromProduct = (typeValue: string, images: any) => {
+  const imageListFromProduct = (
+    typeValue: string,
+    images: any,
+    selected: any
+  ) => {
     if (typeValue === "Mug") {
       return { white: images.white };
     }
-
+    if (!selected.beige) {
+      delete images.beige;
+    }
+    if (!selected.red) {
+      delete images.red;
+    }
+    if (!selected.blue) {
+      delete images.blue;
+    }
+    if (!selected.black) {
+      delete images.black;
+    }
     return images;
   };
 
@@ -120,7 +188,7 @@ const create = async (req: Request, res: Response) => {
       return ["11 oz", "15 oz"];
     }
 
-    return ["S", "M", "L"];
+    return ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
   };
 
   const logoURL = await productService.uploadLogo(
@@ -129,7 +197,7 @@ const create = async (req: Request, res: Response) => {
     productName
   );
   const imagesBuffer = await productService.transformImagesFromBase64ToBuffer(
-    imageListFromProduct(type, req.body.imgListProduct)
+    imageListFromProduct(type, req.body.imgListProduct, req.body.colorsSelected)
   );
   const ImagesUrl = await productService.uploadImages(
     imagesBuffer,
@@ -171,7 +239,7 @@ const create = async (req: Request, res: Response) => {
       connectOrCreate: sizeofProdut(type),
     },
     colors: {
-      connectOrCreate: colorsofProdut(type),
+      connectOrCreate: colorsofProdut(type, req.body.colorsSelected),
     },
   });
 

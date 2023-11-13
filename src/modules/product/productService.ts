@@ -60,6 +60,40 @@ class ProductService {
     });
   };
 
+  // createProductInStripe = async (
+  //   products: any,
+  //   stripe: any,
+  //   productName: string,
+  //   price: number,
+  //   sizeOptions: string[]
+  // ) => {
+  //   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+  //   const productsCreated = products.map(async (product: any) => {
+  //     const productsWithSize = sizeOptions.map(async (size) => {
+  //       await delay(500);
+  //       const newProduct = await stripe.products.create({
+  //         name: `${productName}-${product.color}-${size}-product`,
+  //         images: [product.imgProductURL],
+  //       });
+
+  //       const priceProduct = await stripe.prices.create({
+  //         product: newProduct.id,
+  //         currency: "usd",
+  //         unit_amount: price * 100,
+  //       });
+  //       return {
+  //         size,
+  //         ...product,
+  //         ...priceProduct,
+  //       };
+  //     });
+  //     return Promise.all(productsWithSize);
+  //   });
+
+  //   return Promise.all(productsCreated);
+  // };
+
   createProductInStripe = async (
     products: any,
     stripe: any,
@@ -67,9 +101,13 @@ class ProductService {
     price: number,
     sizeOptions: string[]
   ) => {
-    const productsCreated = products.map(async (product: any) => {
-      console;
-      const productsWithSize = sizeOptions.map(async (size) => {
+    const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+    const productsCreated = [];
+    for (const product of products) {
+      const productsWithSize = [];
+      await delay(500); // Espera 500 ms antes de cada llamada a la API
+      for (const size of sizeOptions) {
         const newProduct = await stripe.products.create({
           name: `${productName}-${product.color}-${size}-product`,
           images: [product.imgProductURL],
@@ -80,14 +118,15 @@ class ProductService {
           currency: "usd",
           unit_amount: price * 100,
         });
-        return {
+
+        productsWithSize.push({
           size,
           ...product,
           ...priceProduct,
-        };
-      });
-      return Promise.all(productsWithSize);
-    });
+        });
+      }
+      productsCreated.push(Promise.all(productsWithSize));
+    }
 
     return Promise.all(productsCreated);
   };
