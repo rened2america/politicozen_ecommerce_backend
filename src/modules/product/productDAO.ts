@@ -72,6 +72,11 @@ class ProductDAO {
         sizes: true,
         colors: true,
         tag: true,
+        artist: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
     console.log("allProducts", allProducts);
