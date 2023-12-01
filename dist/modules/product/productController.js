@@ -24,38 +24,187 @@ const configStripe_1 = require("../../utils/configStripe");
 const configAws_1 = require("../../utils/configAws");
 const mathjs_1 = require("mathjs");
 const generateCode_1 = require("../../utils/generateCode");
+const artistDAO_1 = __importDefault(require("../artist/artistDAO"));
 const create = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { x, y, angle, scale, tags, type } = req.body;
+    const { x, y, angle, scale, tags, type, groupId } = req.body;
+    console.log("Distance x", x);
+    console.log("Distance y", y);
     const xDecimal = (0, mathjs_1.round)(x, 6);
     const yDecimal = (0, mathjs_1.round)(y, 6);
     const angleDecimal = (0, mathjs_1.round)(angle, 6);
     const scaleDecimal = (0, mathjs_1.round)(scale, 6);
+    console.log("Distance rounded x", xDecimal);
+    console.log("Distance rounded y", yDecimal);
     const productName = req.body.name;
     const productSubtitle = req.body.subtitle;
     const productDescription = req.body.description;
     const s3 = (0, configAws_1.connectionAws)();
     const stripe = (0, configStripe_1.connectionStripe)();
+    const priceOfProduct = (typeValue) => {
+        if (typeValue === "Sweatshirt") {
+            return 25.99;
+        }
+        if (typeValue === "Shirt") {
+            return 15.99;
+        }
+        if (typeValue === "Hoodie") {
+            return 36.99;
+        }
+        if (typeValue === "Mug") {
+            return 24.99;
+        }
+    };
+    const sizeofProdut = (typeValue) => {
+        if (typeValue === "Mug") {
+            return [
+                {
+                    where: { value: "11 oz" },
+                    create: { value: "11 oz" },
+                },
+                {
+                    where: { value: "15 oz" },
+                    create: { value: "15 oz" },
+                },
+            ];
+        }
+        return [
+            {
+                where: { value: "S" },
+                create: { value: "S" },
+            },
+            {
+                where: { value: "M" },
+                create: { value: "M" },
+            },
+            {
+                where: { value: "L" },
+                create: { value: "L" },
+            },
+            {
+                where: { value: "XL" },
+                create: { value: "XL" },
+            },
+            {
+                where: { value: "2XL" },
+                create: { value: "2XL" },
+            },
+            {
+                where: { value: "3XL" },
+                create: { value: "3XL" },
+            },
+            {
+                where: { value: "4XL" },
+                create: { value: "4XL" },
+            },
+            {
+                where: { value: "5XL" },
+                create: { value: "5XL" },
+            },
+        ];
+    };
+    // const colorsofProdut = (typeValue: string, selected:any) => {
+    //   if (typeValue === "Mug") {
+    //     return [
+    //       {
+    //         where: { value: "White" },
+    //         create: { value: "White" },
+    //       },
+    //     ];
+    //   }
+    //   // const valueToReturn = selected.filter(()=> {
+    //   //   return
+    //   // })
+    //   return [
+    //     {
+    //       where: { value: "White" },
+    //       create: { value: "White" },
+    //     },
+    //     {
+    //       where: { value: "Beige" },
+    //       create: { value: "Beige" },
+    //     },
+    //     {
+    //       where: { value: "Red" },
+    //       create: { value: "Red" },
+    //     },
+    //     {
+    //       where: { value: "Blue" },
+    //       create: { value: "Blue" },
+    //     },
+    //     {
+    //       where: { value: "Black" },
+    //       create: { value: "Black" },
+    //     },
+    //   ];
+    // };
+    const colorsofProdut = (typeValue, selected) => {
+        // Si el tipo es "Mug", retorna un array con solo el color "White"
+        if (typeValue === "Mug") {
+            return [
+                {
+                    where: { value: "White" },
+                    create: { value: "White" },
+                },
+            ];
+        }
+        // Array para almacenar los colores seleccionados
+        const colorsToReturn = [];
+        // Iterar sobre los colores en 'selected'
+        for (const color in selected) {
+            // Verificar si el color está seleccionado
+            if (selected[color]) {
+                // Convertir la clave de 'selected' a formato de texto capitalizado
+                const colorCapitalized = color.charAt(0).toUpperCase() + color.slice(1);
+                // Agregar el color al array
+                colorsToReturn.push({
+                    where: { value: colorCapitalized },
+                    create: { value: colorCapitalized },
+                });
+            }
+        }
+        return colorsToReturn;
+    };
+    const imageListFromProduct = (typeValue, images, selected) => {
+        if (typeValue === "Mug") {
+            return { white: images.white };
+        }
+        if (!selected.beige) {
+            delete images.beige;
+        }
+        if (!selected.red) {
+            delete images.red;
+        }
+        if (!selected.blue) {
+            delete images.blue;
+        }
+        if (!selected.black) {
+            delete images.black;
+        }
+        return images;
+    };
+    const sizeOptionsOfProduct = (typeValue) => {
+        if (typeValue === "Mug") {
+            return ["11 oz", "15 oz"];
+        }
+        return ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
+    };
     const logoURL = yield productService_1.default.uploadLogo(req.body.imgLogo, s3, productName);
-    const imagesBuffer = yield productService_1.default.transformImagesFromBase64ToBuffer(req.body.imgListProduct);
+    const imagesBuffer = yield productService_1.default.transformImagesFromBase64ToBuffer(imageListFromProduct(type, req.body.imgListProduct, req.body.colorsSelected));
     const ImagesUrl = yield productService_1.default.uploadImages(imagesBuffer, productName, s3);
-    const productStripe = yield productService_1.default.createProductInStripe(ImagesUrl, stripe, productName);
+    const productStripe = yield productService_1.default.createProductInStripe(ImagesUrl, stripe, productName, priceOfProduct(type), sizeOptionsOfProduct(type));
     const tagOperations = tags.map((tagValue) => ({
         where: { value: tagValue },
         create: { value: tagValue },
     }));
-    // const imgListProducts = req.body.imgListProduct.map((imgProduct: any) => {
-    //   return Buffer.from(imgProduct.split(",")[1], "base64");
-    // });
-    // const imgProduct = Buffer.from(req.body.imgProduct.split(",")[1], "base64");
     const artistId = req.user.artistId;
-    // // validar si el titulo del producto existe si no existe crear el producto
     const newProduct = yield productService_1.default.create({
-        price: 30,
+        price: priceOfProduct(type),
         title: productName,
         subtitle: productSubtitle,
         description: productDescription,
         artistId: artistId,
         idGeneral: (0, generateCode_1.generateCode)(),
+        groupId,
         tag: {
             connectOrCreate: tagOperations,
         },
@@ -66,47 +215,15 @@ const create = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
         },
         sizes: {
-            connectOrCreate: [
-                {
-                    where: { value: "S" },
-                    create: { value: "S" },
-                },
-                {
-                    where: { value: "M" },
-                    create: { value: "M" },
-                },
-                {
-                    where: { value: "L" },
-                    create: { value: "L" },
-                },
-            ],
+            connectOrCreate: sizeofProdut(type),
         },
         colors: {
-            connectOrCreate: [
-                {
-                    where: { value: "White" },
-                    create: { value: "White" },
-                },
-                {
-                    where: { value: "Beige" },
-                    create: { value: "Beige" },
-                },
-                {
-                    where: { value: "Red" },
-                    create: { value: "Red" },
-                },
-                {
-                    where: { value: "Blue" },
-                    create: { value: "Blue" },
-                },
-                {
-                    where: { value: "Black" },
-                    create: { value: "Black" },
-                },
-            ],
+            connectOrCreate: colorsofProdut(type, req.body.colorsSelected),
         },
     });
+    console.log("productStripe", productStripe);
     const productsToDb = productStripe.flat().map((product) => {
+        console.log("product", product);
         return {
             //@ts-ignore
             productId: newProduct.id,
@@ -115,7 +232,7 @@ const create = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             angle: angleDecimal,
             scale: scaleDecimal,
             variant: product.color,
-            price: 30,
+            price: priceOfProduct(type),
             priceId: product.id,
             url: product.imgProductURL,
             urlLogo: logoURL,
@@ -226,8 +343,8 @@ const session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         mode: "payment",
         payment_method_types: ["card"],
         line_items: NormalizeProducts,
-        success_url: "https://politicozen.dev/succes/",
-        cancel_url: "https://politicozen.dev/cancel/",
+        success_url: process.env.URL_ECOMMERCE + "/succes/",
+        cancel_url: process.env.URL_ECOMMERCE + "/cancel/",
     });
     res
         .status(201)
@@ -399,6 +516,97 @@ const deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         message: "Product delete",
     });
 });
+const createGroup = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const artistId = req.user.artistId;
+    //@ts-ignore
+    const bufferArt = req.file.buffer;
+    const name = req.body.name;
+    const getArtist = yield artistDAO_1.default.getArtistById(artistId);
+    const s3 = (0, configAws_1.connectionAws)();
+    const paramsImgArt = {
+        Bucket: process.env.BUCKET_IMG,
+        //@ts-ignore
+        Key: `${Date.now().toString()}-${getArtist.name}-Art`,
+        Body: bufferArt,
+        ContentType: "image/png",
+    };
+    //@ts-ignore
+    const imgArtURL = yield s3.upload(paramsImgArt).promise();
+    // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
+    yield initialConfig_1.prisma.group.create({
+        data: {
+            artistId,
+            urlImage: imgArtURL.Location,
+            //@ts-ignore
+            name,
+        },
+    });
+    res.status(200).json({
+        message: "Updated image",
+    });
+});
+const getGallery = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const artistId = req.user.artistId;
+    //@ts-ignore
+    const gallery = yield initialConfig_1.prisma.group.findMany({
+        where: {
+            artistId,
+        },
+    });
+    res.status(200).json({
+        message: "List of gallery",
+        gallery,
+    });
+});
+const getGroupRelation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const artistId = 1;
+    //@ts-ignore
+    const groupRelation = yield initialConfig_1.prisma.group.findMany({
+        take: 4,
+        where: {
+            artistId,
+            product: {
+                some: {},
+            },
+        },
+        include: {
+            product: {
+                include: {
+                    design: true,
+                    types: true,
+                },
+            },
+        },
+    });
+    res.status(200).json({
+        message: "List of group relation",
+        groupRelation,
+    });
+});
+const getGroupRelationByArtist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const artistId = 1;
+    //@ts-ignore
+    const groupRelation = yield initialConfig_1.prisma.group.findMany({
+        where: {
+            artistId,
+            product: {
+                some: {},
+            },
+        },
+        include: {
+            product: {
+                include: {
+                    design: true,
+                    types: true,
+                },
+            },
+        },
+    });
+    res.status(200).json({
+        message: "List of group relation",
+        groupRelation,
+    });
+});
 const createWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(create);
 const getAllWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getAll);
 const getByUserWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getByUser);
@@ -408,6 +616,10 @@ const webhookWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandling
 const getOrdersWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getOrders);
 const updateWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(update);
 const deleteWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(deleteProduct);
+const createGroupWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(createGroup);
+const getGalleryWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGallery);
+const getGroupRelationWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGroupRelation);
+const getGroupRelationByArtistWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGroupRelationByArtist);
 exports.productController = {
     create: createWithDecorators,
     getAll: getAllWithDecorators,
@@ -418,4 +630,8 @@ exports.productController = {
     getOrders: getOrdersWithDecorators,
     update: updateWithDecorators,
     delete: deleteWithDecorators,
+    createGroup: createGroupWithDecorators,
+    getGallery: getGalleryWithDecorators,
+    getGroupRelation: getGroupRelationWithDecorators,
+    getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,
 };

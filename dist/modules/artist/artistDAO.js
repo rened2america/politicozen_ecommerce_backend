@@ -59,16 +59,19 @@ class ArtistDAO {
                     skip: (page - 1) * limit,
                     take: limit,
                     where: {
-                        artistId: id,
+                        artist: {
+                            name: id,
+                        },
                     },
                     include: {
                         design: true,
+                        types: true,
                     },
                 }),
                 initialConfig_1.prisma.product.count(),
-                initialConfig_1.prisma.artist.findUnique({
+                initialConfig_1.prisma.artist.findFirst({
                     where: {
-                        id,
+                        name: id,
                     },
                 }),
             ]);

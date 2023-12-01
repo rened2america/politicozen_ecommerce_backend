@@ -63,11 +63,43 @@ class ProductService {
                 };
             });
         });
-        this.createProductInStripe = (products, stripe, productName) => __awaiter(this, void 0, void 0, function* () {
-            const productsCreated = products.map((product) => __awaiter(this, void 0, void 0, function* () {
-                const sizeOptions = ["S", "M", "L"];
-                console;
-                const productsWithSize = sizeOptions.map((size) => __awaiter(this, void 0, void 0, function* () {
+        // createProductInStripe = async (
+        //   products: any,
+        //   stripe: any,
+        //   productName: string,
+        //   price: number,
+        //   sizeOptions: string[]
+        // ) => {
+        //   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+        //   const productsCreated = products.map(async (product: any) => {
+        //     const productsWithSize = sizeOptions.map(async (size) => {
+        //       await delay(500);
+        //       const newProduct = await stripe.products.create({
+        //         name: `${productName}-${product.color}-${size}-product`,
+        //         images: [product.imgProductURL],
+        //       });
+        //       const priceProduct = await stripe.prices.create({
+        //         product: newProduct.id,
+        //         currency: "usd",
+        //         unit_amount: price * 100,
+        //       });
+        //       return {
+        //         size,
+        //         ...product,
+        //         ...priceProduct,
+        //       };
+        //     });
+        //     return Promise.all(productsWithSize);
+        //   });
+        //   return Promise.all(productsCreated);
+        // };
+        this.createProductInStripe = (products, stripe, productName, price, sizeOptions) => __awaiter(this, void 0, void 0, function* () {
+            const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+            const productsCreated = [];
+            for (const product of products) {
+                const productsWithSize = [];
+                yield delay(500); // Espera 500 ms antes de cada llamada a la API
+                for (const size of sizeOptions) {
                     const newProduct = yield stripe.products.create({
                         name: `${productName}-${product.color}-${size}-product`,
                         images: [product.imgProductURL],
@@ -75,12 +107,12 @@ class ProductService {
                     const priceProduct = yield stripe.prices.create({
                         product: newProduct.id,
                         currency: "usd",
-                        unit_amount: 3000,
+                        unit_amount: price * 100,
                     });
-                    return Object.assign(Object.assign({ size }, product), priceProduct);
-                }));
-                return Promise.all(productsWithSize);
-            }));
+                    productsWithSize.push(Object.assign(Object.assign({ size }, product), priceProduct));
+                }
+                productsCreated.push(Promise.all(productsWithSize));
+            }
             return Promise.all(productsCreated);
         });
     }
