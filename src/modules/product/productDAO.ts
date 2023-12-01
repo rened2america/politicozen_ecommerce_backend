@@ -65,7 +65,7 @@ class ProductDAO {
     console.log("getById", id);
     const groupProduct = await prisma.group.findUnique({
       where: {
-        id: 5,
+        id,
       },
       include: {
         artist: {
