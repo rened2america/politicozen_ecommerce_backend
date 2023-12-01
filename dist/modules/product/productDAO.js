@@ -72,24 +72,45 @@ class ProductDAO {
         });
         this.getById = (id, variant, size) => __awaiter(this, void 0, void 0, function* () {
             console.log("getById", id);
+            const groupProduct = yield initialConfig_1.prisma.group.findUnique({
+                where: {
+                    id: 5,
+                },
+                include: {
+                    artist: {
+                        select: {
+                            name: true,
+                        },
+                    },
+                    product: {
+                        include: {
+                            design: true,
+                            sizes: true,
+                            colors: true,
+                            tag: true,
+                            types: true,
+                        },
+                    },
+                },
+            });
             const allProducts = yield initialConfig_1.prisma.product.findUnique({
                 where: {
                     id,
                 },
                 include: {
-                    design: {
-                        where: {
-                            variant,
-                            size,
-                        },
-                    },
+                    design: true,
                     sizes: true,
                     colors: true,
                     tag: true,
+                    artist: {
+                        select: {
+                            name: true,
+                        },
+                    },
                 },
             });
             console.log("allProducts", allProducts);
-            return allProducts;
+            return groupProduct;
         });
     }
 }

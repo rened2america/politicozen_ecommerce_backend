@@ -127,13 +127,16 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const password = user.password;
     const passwordToSave = yield authService_1.default.encryptPassword(password);
     const newUser = yield authService_1.default.createUser(Object.assign(Object.assign({}, user), { password: passwordToSave }));
-    const sendEmail = yield authService_1.default.sendEmailConfirmation(newUser.email);
-    const sendEmailVerifyArtist = yield authService_1.default.sendEmailVerifyArtist(newUser.email, newUser.name);
+    // const sendEmail = await authService.sendEmailConfirmation(newUser.email);
+    // const sendEmailVerifyArtist = await authService.sendEmailVerifyArtist(
+    //   newUser.email,
+    //   newUser.name
+    // );
     res.status(201).json({
         message: "user created",
         newUser,
-        sendEmail,
-        sendEmailVerifyArtist,
+        // sendEmail,
+        // sendEmailVerifyArtist,
     });
 });
 const userIsLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
