@@ -63,6 +63,27 @@ class ProductDAO {
 
   getById = async (id: number, variant: string, size: string) => {
     console.log("getById", id);
+    const groupProduct = await prisma.group.findUnique({
+      where: {
+        id: 5,
+      },
+      include: {
+        artist: {
+          select: {
+            name: true,
+          },
+        },
+        product: {
+          include: {
+            design: true,
+            sizes: true,
+            colors: true,
+            tag: true,
+            types: true,
+          },
+        },
+      },
+    });
     const allProducts = await prisma.product.findUnique({
       where: {
         id,
@@ -80,7 +101,7 @@ class ProductDAO {
       },
     });
     console.log("allProducts", allProducts);
-    return allProducts;
+    return groupProduct;
   };
 }
 

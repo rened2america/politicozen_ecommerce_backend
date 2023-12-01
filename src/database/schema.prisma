@@ -30,6 +30,7 @@ model Artist {
   design Design[]
   product Product[]
   order Order[]
+  group Group[]
 } 
 
 model Order {
@@ -80,8 +81,11 @@ model Product {
   types Type[]
   artist Artist @relation(fields:[artistId], references: [id] )
   artistId Int
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([groupId])
   @@index([artistId])
 }
 
@@ -130,6 +134,18 @@ model Design {
   productId Int
   @@index([productId])
 
+}
+
+model Group {
+  id Int @id @default(autoincrement())
+  product Product[]
+  urlImage String
+  name String
+  artist Artist @relation(fields:[artistId], references: [id] )
+  artistId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([artistId])
 }
 
 // type ArtistsAlbums {

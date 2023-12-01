@@ -10,8 +10,9 @@ import { connectionStripe } from "../../utils/configStripe";
 import { connectionAws } from "../../utils/configAws";
 import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
+import artistDAO from "../artist/artistDAO";
 const create = async (req: Request, res: Response) => {
-  const { x, y, angle, scale, tags, type } = req.body;
+  const { x, y, angle, scale, tags, type, groupId } = req.body;
   console.log("Distance x", x);
   console.log("Distance y", y);
   const xDecimal = round(x, 6);
@@ -226,6 +227,7 @@ const create = async (req: Request, res: Response) => {
     description: productDescription,
     artistId: artistId,
     idGeneral: generateCode(),
+    groupId,
     tag: {
       connectOrCreate: tagOperations,
     },
@@ -389,6 +391,7 @@ const webhook = async (req: Request, res: Response) => {
     const listData = await stripe.checkout.sessions.listLineItems(
       req.body.data.object.id
     );
+
     const listPromise = listData.data.map(async (product) => {
       const design = await prisma.design.findFirst({
         where: {
@@ -419,7 +422,6 @@ const webhook = async (req: Request, res: Response) => {
         },
       });
     });
-
     await Promise.all(listPromise);
   }
   res.sendStatus(200);
@@ -578,6 +580,101 @@ const deleteProduct = async (req: Request, res: Response) => {
   });
 };
 
+const createGroup = async (req: Request, res: Response) => {
+  const artistId = req.user.artistId;
+  //@ts-ignore
+  const bufferArt = req.file.buffer;
+  const name = req.body.name;
+  const getArtist = await artistDAO.getArtistById(artistId);
+  const s3 = connectionAws();
+  const paramsImgArt = {
+    Bucket: process.env.BUCKET_IMG,
+    //@ts-ignore
+    Key: `${Date.now().toString()}-${getArtist.name}-Art`,
+    Body: bufferArt,
+    ContentType: "image/png",
+  };
+  //@ts-ignore
+  const imgArtURL = await s3.upload(paramsImgArt).promise();
+  // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
+  await prisma.group.create({
+    data: {
+      artistId,
+      urlImage: imgArtURL.Location,
+      //@ts-ignore
+      name,
+    },
+  });
+  res.status(200).json({
+    message: "Updated image",
+  });
+};
+
+const getGallery = async (req: Request, res: Response) => {
+  const artistId = req.user.artistId;
+  //@ts-ignore
+  const gallery = await prisma.group.findMany({
+    where: {
+      artistId,
+    },
+  });
+  res.status(200).json({
+    message: "List of gallery",
+    gallery,
+  });
+};
+
+const getGroupRelation = async (req: Request, res: Response) => {
+  const artistId = 1;
+  //@ts-ignore
+  const groupRelation = await prisma.group.findMany({
+    take: 4,
+    where: {
+      artistId,
+      product: {
+        some: {},
+      },
+    },
+    include: {
+      product: {
+        include: {
+          design: true,
+          types: true,
+        },
+      },
+    },
+  });
+  res.status(200).json({
+    message: "List of group relation",
+    groupRelation,
+  });
+};
+
+const getGroupRelationByArtist = async (req: Request, res: Response) => {
+  const artistId = 1;
+  //@ts-ignore
+  const groupRelation = await prisma.group.findMany({
+    where: {
+      artistId,
+      product: {
+        some: {},
+      },
+    },
+    include: {
+      product: {
+        include: {
+          design: true,
+          types: true,
+        },
+      },
+    },
+  });
+  res.status(200).json({
+    message: "List of group relation",
+    groupRelation,
+  });
+};
+
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
@@ -587,6 +684,13 @@ const webhookWithDecorators = withErrorHandlingDecorator(webhook);
 const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
 const updateWithDecorators = withErrorHandlingDecorator(update);
 const deleteWithDecorators = withErrorHandlingDecorator(deleteProduct);
+const createGroupWithDecorators = withErrorHandlingDecorator(createGroup);
+const getGalleryWithDecorators = withErrorHandlingDecorator(getGallery);
+const getGroupRelationWithDecorators =
+  withErrorHandlingDecorator(getGroupRelation);
+const getGroupRelationByArtistWithDecorators = withErrorHandlingDecorator(
+  getGroupRelationByArtist
+);
 
 export const productController = {
   create: createWithDecorators,
@@ -598,4 +702,8 @@ export const productController = {
   getOrders: getOrdersWithDecorators,
   update: updateWithDecorators,
   delete: deleteWithDecorators,
+  createGroup: createGroupWithDecorators,
+  getGallery: getGalleryWithDecorators,
+  getGroupRelation: getGroupRelationWithDecorators,
+  getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,
 };
