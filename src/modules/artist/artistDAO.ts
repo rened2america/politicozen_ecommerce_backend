@@ -61,7 +61,6 @@ class ArtistDAO {
           },
         },
         include: {
-          design: true,
           types: true,
         },
       }),

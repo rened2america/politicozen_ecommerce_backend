@@ -359,8 +359,17 @@ const getById = async (req: Request, res: Response) => {
   //@ts-ignore
   const size = req.query.size ? req.query.size : "S";
   //@ts-ignore
-  const products = await productService.getById(productId, variant, size);
-  res.status(201).json({ message: "Productos Obtenidos", products });
+  const product = req.query.product;
+
+  //@ts-ignore
+  const products = await productService.getById(
+    productId,
+    variant,
+    //@ts-ignore
+    size,
+    product
+  );
+  res.status(201).json({ message: "Productos Obtenidos", ...products });
 };
 
 const session = async (req: Request, res: Response) => {
@@ -625,12 +634,21 @@ const getGallery = async (req: Request, res: Response) => {
 };
 
 const getGroupRelation = async (req: Request, res: Response) => {
-  const artistId = 1;
+  const groupId = parseInt(req.params.groupId);
   //@ts-ignore
+  const artist = await prisma.artist.findFirst({
+    where: {
+      group: {
+        some: {
+          id: groupId,
+        },
+      },
+    },
+  });
   const groupRelation = await prisma.group.findMany({
     take: 4,
     where: {
-      artistId,
+      artistId: artist.id,
       product: {
         some: {},
       },
@@ -651,12 +669,15 @@ const getGroupRelation = async (req: Request, res: Response) => {
 };
 
 const getGroupRelationByArtist = async (req: Request, res: Response) => {
-  const artistName = req.params.id.replace(/-/g, " ");
+  const artistName = req.params.artist.replace(/-/g, " ");
   //@ts-ignore
   const groupRelation = await prisma.group.findMany({
     where: {
       artist: {
         name: artistName,
+      },
+      product: {
+        some: {},
       },
     },
     include: {
