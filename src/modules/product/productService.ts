@@ -13,8 +13,8 @@ class ProductService {
     const getProducts = await productDAO.getAll(filters, page);
     return getProducts;
   };
-  getById = async (id: number, variant: string, size: string) => {
-    const getProducts = await productDAO.getById(id, variant, size);
+  getById = async (id: number, variant: string, size: string, product) => {
+    const getProducts = await productDAO.getById(id, variant, size, product);
     return getProducts;
   };
   uploadLogo = async (logo: string, s3: any, productName: string) => {
