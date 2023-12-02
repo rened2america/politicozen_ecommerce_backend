@@ -15,7 +15,7 @@ routes
   .post("/create", authValidate, productController.create)
   .get("/all", productController.getAll)
   .get("/groupRelation", productController.getGroupRelation)
-  .get("/groupRelation/:artist", productController.getGroupRelation)
+  .get("/groupRelation/:artist", productController.getGroupRelationByArtist)
   .get("/allByUser", authValidate, productController.getByUser)
   .post("/payment", productController.session)
   .get("/infoorders/orders", authValidate, productController.getOrders)

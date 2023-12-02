@@ -651,13 +651,12 @@ const getGroupRelation = async (req: Request, res: Response) => {
 };
 
 const getGroupRelationByArtist = async (req: Request, res: Response) => {
-  const artistId = 1;
+  const artistName = req.params.id.replace(/-/g, " ");
   //@ts-ignore
   const groupRelation = await prisma.group.findMany({
     where: {
-      artistId,
-      product: {
-        some: {},
+      artist: {
+        name: artistName,
       },
     },
     include: {
