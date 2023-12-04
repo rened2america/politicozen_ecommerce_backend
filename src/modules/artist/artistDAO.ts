@@ -36,10 +36,7 @@ class ArtistDAO {
   ): Promise<{ artists: any[]; count: number } | null> => {
     console.log(page);
     const [artists, count] = await prisma.$transaction([
-      prisma.artist.findMany({
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
+      prisma.artist.findMany(),
       prisma.artist.count(),
     ]);
 
