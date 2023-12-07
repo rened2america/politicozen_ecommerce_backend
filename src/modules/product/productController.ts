@@ -219,6 +219,16 @@ const create = async (req: Request, res: Response) => {
   }));
 
   const artistId = req.user.artistId;
+  console.log("priceOfProduct(type)", priceOfProduct(type));
+  console.log("productName", productName);
+  console.log("productSubtitle", productSubtitle);
+  console.log("productDescription", productDescription);
+  console.log("artistId", artistId);
+  console.log("generateCode()", generateCode());
+  console.log("tagOperations", tagOperations);
+  console.log("types", type);
+  console.log("sizeofProdut", sizeofProdut(type));
+  console.log("colorsofProdut", colorsofProdut(type, req.body.colorsSelected));
 
   const newProduct = await productService.create({
     price: priceOfProduct(type),
@@ -370,6 +380,25 @@ const getById = async (req: Request, res: Response) => {
     product
   );
   res.status(201).json({ message: "Productos Obtenidos", ...products });
+};
+
+const getByIdUnique = async (req: Request, res: Response) => {
+  const productId: number = parseInt(req.params.id);
+
+  //@ts-ignore
+  const productFromDb = await prisma.product.findUnique({
+    where: {
+      id: productId,
+    },
+    include: {
+      tag: true,
+      design: true,
+      sizes: true,
+      colors: true,
+      types: true,
+    },
+  });
+  res.status(201).json({ message: "Productos Obtenidos", productFromDb });
 };
 
 const session = async (req: Request, res: Response) => {
@@ -547,7 +576,7 @@ const update = async (req: Request, res: Response) => {
       id: productFromUser.id,
     },
     data: {
-      title: productFromUser.title,
+      title: productFromUser.name,
       description: productFromUser.description,
       tag: {
         disconnect: product.tag.map((tag) => ({ id: tag.id })),
@@ -699,6 +728,8 @@ const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
 const getByIdWithDecorators = withErrorHandlingDecorator(getById);
+const getByIdUniqueWithDecorators = withErrorHandlingDecorator(getByIdUnique);
+
 const sessionWithDecorators = withErrorHandlingDecorator(session);
 const webhookWithDecorators = withErrorHandlingDecorator(webhook);
 const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
@@ -726,4 +757,5 @@ export const productController = {
   getGallery: getGalleryWithDecorators,
   getGroupRelation: getGroupRelationWithDecorators,
   getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,
+  getByIdUnique: getByIdUniqueWithDecorators,
 };
