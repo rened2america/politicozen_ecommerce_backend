@@ -32,6 +32,7 @@ routes
     productController.webhook
   )
   .put("/", authValidate, productController.update)
+  .get("/unique/:id", productController.getByIdUnique)
   .delete("/:productId", authValidate, productController.delete)
   .get("/:id", productController.getById);
 
