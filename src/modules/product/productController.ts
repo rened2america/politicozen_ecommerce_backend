@@ -724,6 +724,98 @@ const getGroupRelationByArtist = async (req: Request, res: Response) => {
   });
 };
 
+const getCategories = async (req: Request, res: Response) => {
+  const categories = await prisma.tag.findMany({
+    where: {
+      products: {
+        some: {},
+      },
+    },
+    include: {
+      products: {
+        select: {
+          group: {
+            select: {
+              urlImage: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  res.status(200).json({
+    message: "List of group relation",
+    categories,
+  });
+};
+
+const getArtsFromCategory = async (req: Request, res: Response) => {
+  const category = req.params.category;
+  const productsWithTags = await prisma.tag.findMany({
+    where: {
+      value: category,
+    },
+    include: {
+      products: {
+        include: {
+          group: true,
+          types: true,
+        },
+      },
+    },
+  });
+
+  const firstProductsByGroupId = {};
+
+  // Iterar sobre los productos y almacenar solo el primer producto de cada groupId
+  productsWithTags.forEach((tag) => {
+    tag.products.forEach((product) => {
+      const groupId = product.groupId; // Asegúrate de usar la clave correcta para groupId
+      if (!firstProductsByGroupId[groupId]) {
+        firstProductsByGroupId[groupId] = product;
+      }
+    });
+  });
+
+  // Obtener los productos filtrados como un array
+  const uniqueProducts = Object.values(firstProductsByGroupId);
+
+  res.status(200).json({
+    message: "List of group relation",
+    products: uniqueProducts,
+  });
+};
+
+const getArtsFromHome = async (req: Request, res: Response) => {
+  const arts = await prisma.group.findMany({
+    where: {
+      product: {
+        some: {},
+      },
+    },
+    orderBy: {
+      id: "desc",
+    },
+    take: 15,
+    include: {
+      artist: {
+        select: {
+          name: true,
+        },
+      },
+      product: {
+        select: {
+          types: true,
+        },
+      },
+    },
+  });
+  res.status(200).json({
+    message: "List of arts",
+    arts,
+  });
+};
+
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
@@ -742,6 +834,11 @@ const getGroupRelationWithDecorators =
 const getGroupRelationByArtistWithDecorators = withErrorHandlingDecorator(
   getGroupRelationByArtist
 );
+const getCategoriesWithDecorators = withErrorHandlingDecorator(getCategories);
+const getArtsFromCategoryWithDecorators =
+  withErrorHandlingDecorator(getArtsFromCategory);
+const getArtsFromHomeWithDecorators =
+  withErrorHandlingDecorator(getArtsFromHome);
 
 export const productController = {
   create: createWithDecorators,
@@ -758,4 +855,7 @@ export const productController = {
   getGroupRelation: getGroupRelationWithDecorators,
   getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,
   getByIdUnique: getByIdUniqueWithDecorators,
+  getCategories: getCategoriesWithDecorators,
+  getArtsFromCategory: getArtsFromCategoryWithDecorators,
+  getArtsFromHome: getArtsFromHomeWithDecorators,
 };
