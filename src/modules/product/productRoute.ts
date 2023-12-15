@@ -14,6 +14,9 @@ const routes = Router();
 routes
   .post("/create", authValidate, productController.create)
   .get("/all", productController.getAll)
+  .get("/artsFromHome", productController.getArtsFromHome)
+  .get("/categories", productController.getCategories)
+  .get("/categories/:category", productController.getArtsFromCategory)
   .get("/groupRelation/section/:groupId", productController.getGroupRelation)
   .get("/groupRelation/:artist", productController.getGroupRelationByArtist)
   .get("/allByUser", authValidate, productController.getByUser)
