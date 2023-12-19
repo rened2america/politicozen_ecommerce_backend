@@ -623,8 +623,23 @@ const createGroup = async (req: Request, res: Response) => {
   //@ts-ignore
   const bufferArt = req.file.buffer;
   const name = req.body.name;
+  const imageCrop = req.body.imageCrop;
+  console.log("oki2", req.body.imageCrop);
+  const base64Image = imageCrop.split(";base64,").pop();
+  const imgCropBuffer = Buffer.from(base64Image, "base64");
   const getArtist = await artistDAO.getArtistById(artistId);
   const s3 = connectionAws();
+  const stripe = connectionStripe();
+
+  const paramsImgCrop = {
+    Bucket: process.env.BUCKET_IMG,
+    //@ts-ignore
+    Key: `${Date.now().toString()}-${getArtist.name}-Poster`,
+    Body: imgCropBuffer,
+    ContentType: "image/png",
+  };
+  //@ts-ignore
+  const imgCropURL = await s3.upload(paramsImgCrop).promise();
   const paramsImgArt = {
     Bucket: process.env.BUCKET_IMG,
     //@ts-ignore
@@ -635,7 +650,7 @@ const createGroup = async (req: Request, res: Response) => {
   //@ts-ignore
   const imgArtURL = await s3.upload(paramsImgArt).promise();
   // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
-  await prisma.group.create({
+  const newGroup = await prisma.group.create({
     data: {
       artistId,
       urlImage: imgArtURL.Location,
@@ -643,6 +658,180 @@ const createGroup = async (req: Request, res: Response) => {
       name,
     },
   });
+
+  // Create Price of stripe
+  const newOfProductPosterSmall = await stripe.products.create({
+    name: `${name}-Poster-17x25.5-product`,
+    images: [imgCropURL.Location],
+  });
+  const newOfProductPosterLarge = await stripe.products.create({
+    name: `${name}-Poster-24x36-product`,
+    images: [imgCropURL.Location],
+  });
+  const newOfProductCanvas = await stripe.products.create({
+    name: `${name}-Canvas-11x14-product`,
+    images: [imgCropURL.Location],
+  });
+  const newOfProductCanvas2 = await stripe.products.create({
+    name: `${name}-Canvas-20x30-product`,
+    images: [imgCropURL.Location],
+  });
+
+  const priceProductPosterSmall = await stripe.prices.create({
+    product: newOfProductPosterSmall.id,
+    currency: "usd",
+    unit_amount: 25.99 * 100,
+  });
+  const priceProductPosterLarge = await stripe.prices.create({
+    product: newOfProductPosterLarge.id,
+    currency: "usd",
+    unit_amount: 39.99 * 100,
+  });
+  const priceProductCanvas = await stripe.prices.create({
+    product: newOfProductCanvas.id,
+    currency: "usd",
+    unit_amount: 49.95 * 100,
+  });
+
+  const priceProduct = await stripe.prices.create({
+    product: newOfProductCanvas2.id,
+    currency: "usd",
+    unit_amount: 99.99 * 100,
+  });
+
+  const newProductPoster = await productService.create({
+    price: 25.99,
+    title: name,
+    subtitle: "",
+    description: "",
+    artistId: artistId,
+    idGeneral: generateCode(),
+    groupId: newGroup.id,
+    // tag: {
+    //   connectOrCreate: tagOperations,
+    // },
+    types: {
+      connectOrCreate: {
+        where: { value: "Poster" },
+        create: { value: "Poster" },
+      },
+    },
+    sizes: {
+      connectOrCreate: [
+        {
+          where: { value: `17"x25.5"` },
+          create: { value: `17"x25.5"` },
+        },
+        {
+          where: { value: `24"x36"` },
+          create: { value: `24"x36"` },
+        },
+      ],
+    },
+  });
+  const newProductCanvas = await productService.create({
+    price: 49.95,
+    title: name,
+    subtitle: "",
+    description: "",
+    artistId: artistId,
+    idGeneral: generateCode(),
+    groupId: newGroup.id,
+    // tag: {
+    //   connectOrCreate: tagOperations,
+    // },
+    types: {
+      connectOrCreate: {
+        where: { value: "Canvas" },
+        create: { value: "Canvas" },
+      },
+    },
+    sizes: {
+      connectOrCreate: [
+        {
+          where: { value: `11"x14"` },
+          create: { value: `11"x14"` },
+        },
+        {
+          where: { value: `20"x30"` },
+          create: { value: `20"x30"` },
+        },
+      ],
+    },
+  });
+
+  const createDesignPosterSmall = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductPoster.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 25.99,
+      priceId: priceProductPosterSmall.id,
+      url: imgCropURL.Location,
+      urlLogo: imgArtURL.Location,
+      artistId: artistId,
+      size: `17"x25.5"`,
+    },
+  });
+
+  const createDesignPosterLarge = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductPoster.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 39.99,
+      priceId: priceProductPosterLarge.id,
+      url: imgCropURL.Location,
+      urlLogo: imgArtURL.Location,
+      artistId: artistId,
+      size: `24"x36"`,
+    },
+  });
+
+  const createDesignCanvas1 = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductCanvas.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 49.95,
+      priceId: priceProductCanvas.id,
+      url: imgCropURL.Location,
+      urlLogo: imgArtURL.Location,
+      artistId: artistId,
+      size: `11"x14"`,
+    },
+  });
+
+  const createDesignCanvas2 = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductCanvas.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 99.99,
+      priceId: priceProduct.id,
+      url: imgCropURL.Location,
+      urlLogo: imgArtURL.Location,
+      artistId: artistId,
+      size: `20"x30"`,
+    },
+  });
+
   res.status(200).json({
     message: "Updated image",
   });
@@ -816,6 +1005,81 @@ const getArtsFromHome = async (req: Request, res: Response) => {
   });
 };
 
+const createCanvas = async (req: Request, res: Response) => {
+  const { type, groupId } = req.body;
+
+  const productName = req.body.name;
+  const productSubtitle = req.body.subtitle;
+  const productDescription = req.body.description;
+  const s3 = connectionAws();
+  const stripe = connectionStripe();
+  const artistId = req.user.artistId;
+
+  const logoURL = await productService.uploadLogo(
+    req.body.imgLogo,
+    s3,
+    productName
+  );
+
+  const newOfProduct = await stripe.products.create({
+    name: `${productName}-Canvas-20x30-product`,
+    images: [logoURL],
+  });
+
+  const priceProduct = await stripe.prices.create({
+    product: newOfProduct.id,
+    currency: "usd",
+    unit_amount: 99.99 * 100,
+  });
+
+  const newProduct = await productService.create({
+    price: 99.99,
+    title: productName,
+    subtitle: productSubtitle,
+    description: productDescription,
+    artistId: artistId,
+    idGeneral: generateCode(),
+    groupId,
+    // tag: {
+    //   connectOrCreate: tagOperations,
+    // },
+    types: {
+      connectOrCreate: {
+        where: { value: type },
+        create: { value: type },
+      },
+    },
+    sizes: {
+      connectOrCreate: {
+        where: { value: `20"x30"` },
+        create: { value: `20"x30"` },
+      },
+    },
+  });
+  const createDesign = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProduct.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 99.99,
+      priceId: priceProduct.id,
+      url: logoURL,
+      urlLogo: logoURL,
+      artistId: artistId,
+      size: `20"x30"`,
+    },
+  });
+
+  res.status(200).json({
+    message: "Canvas created",
+    createDesign,
+  });
+};
+
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
@@ -839,6 +1103,7 @@ const getArtsFromCategoryWithDecorators =
   withErrorHandlingDecorator(getArtsFromCategory);
 const getArtsFromHomeWithDecorators =
   withErrorHandlingDecorator(getArtsFromHome);
+const createCanvasWithDecorators = withErrorHandlingDecorator(createCanvas);
 
 export const productController = {
   create: createWithDecorators,
@@ -858,4 +1123,5 @@ export const productController = {
   getCategories: getCategoriesWithDecorators,
   getArtsFromCategory: getArtsFromCategoryWithDecorators,
   getArtsFromHome: getArtsFromHomeWithDecorators,
+  createCanvas: createCanvasWithDecorators,
 };
