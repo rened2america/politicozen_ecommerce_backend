@@ -13,6 +13,7 @@ const routes = Router();
 
 routes
   .post("/create", authValidate, productController.create)
+  .post("/createCanvas", authValidate, productController.createCanvas)
   .get("/all", productController.getAll)
   .get("/artsFromHome", productController.getArtsFromHome)
   .get("/categories", productController.getCategories)

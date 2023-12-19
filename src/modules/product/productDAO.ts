@@ -107,6 +107,20 @@ class ProductDAO {
       },
     });
 
+    if (product === "Poster" || product === "Canvas") {
+      const filterDesignByProduct = await prisma.design.findFirst({
+        where: {
+          productId: filterProductByGroup.id,
+          size,
+        },
+      });
+
+      return {
+        groupProduct,
+        filterProductByGroup,
+        filterDesignByProduct,
+      };
+    }
     const filterDesignByProduct = await prisma.design.findFirst({
       where: {
         productId: filterProductByGroup.id,
