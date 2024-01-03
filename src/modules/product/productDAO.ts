@@ -24,7 +24,6 @@ class ProductDAO {
   };
 
   getAll = async (filters: any, page: any) => {
-    console.log(page);
     const [allProducts, count] = await prisma.$transaction([
       prisma.product.findMany({
         skip: (page.page - 1) * page.limit,
