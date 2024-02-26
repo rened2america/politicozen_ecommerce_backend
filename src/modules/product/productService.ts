@@ -49,6 +49,23 @@ class ProductService {
 
     return Promise.all(uploadedImages);
   };
+
+  uploadOneImage = async (
+    imgBuffer: Buffer,
+    productName: string,
+    s3: any
+  ) => {
+    const paramsImg = {
+      Bucket: process.env.BUCKET_IMG,
+      Key: `${Date.now().toString()}-${productName}-product`,
+      Body: imgBuffer,
+      ContentType: "image/png", // Cambia esto según el tipo de imagen
+    };
+    const uploadedImage = await s3.upload(paramsImg).promise();
+
+    return uploadedImage;
+  };
+
   transformImagesFromBase64ToBuffer = async (images: any) => {
     return Object.keys(images).map((keyValue: string) => {
       const imgBuffer = Buffer.from(images[keyValue].split(",")[1], "base64");

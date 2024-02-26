@@ -5,6 +5,8 @@ import { connectionAws } from "../../utils/configAws";
 import artistDAO from "./artistDAO";
 import { prisma } from "../../database/initialConfig";
 import artistService from "./artistService";
+
+
 const uploadAvatar = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
   //@ts-ignore
@@ -25,6 +27,8 @@ const uploadAvatar = async (req: Request, res: Response) => {
     message: "Updated image",
   });
 };
+
+
 const uploadBanner = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
   //@ts-ignore
@@ -155,9 +159,7 @@ const uploadBannerWithDecorators = withErrorHandlingDecorator(uploadBanner);
 const getProfileWithDecorators = withErrorHandlingDecorator(getProfile);
 const updateProfileWithDecorators = withErrorHandlingDecorator(updateProfile);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
-const getProfileAndProductsWithDecorators = withErrorHandlingDecorator(
-  getProfileAndProducts
-);
+const getProfileAndProductsWithDecorators = withErrorHandlingDecorator(getProfileAndProducts);
 const tokenConfirmWithDecorators = withErrorHandlingDecorator(tokenConfirm);
 const artistConfirmWithDecorators = withErrorHandlingDecorator(artistConfirm);
 
