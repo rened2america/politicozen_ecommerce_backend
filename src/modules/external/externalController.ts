@@ -11,7 +11,7 @@ const uploadRequest = async (req: Request, res: Response) => {
     let imageUrlLocation = '';
 
     try {
-        // Verificar que el token este activo y a quien le pertenece (middleware)
+        // Verificar que el token este activo y a quien le pertenece ()
         if (token) {
             const tokenData = await prisma.tokens.findUnique({
                 where: {
@@ -28,7 +28,7 @@ const uploadRequest = async (req: Request, res: Response) => {
                 });
             }
 
-            // Verificamos que los datos del body cumplan con las especificaciones del un producto (middleware)
+            // Verificamos que los datos del body cumplan con las especificaciones del un producto ()
             const validationError = validateRequestBody(req.body);
 
             if (validationError) {
@@ -82,16 +82,62 @@ const uploadRequest = async (req: Request, res: Response) => {
         console.error(error.message);
     }
 
-
-
-
-
-
-
 };
 
 const getSales = async (req: Request, res: Response) => {
+    const token = req.header('Authorization');
+    try {
+        if (token) {
+            const tokenData = await prisma.tokens.findUnique({
+                where: {
+                    token: token
+                },
+                include: {
+                    artist: true
+                }
+            });
 
+            if (!tokenData) {
+                res.status(404).json({
+                    message: `Unauthorized: Token not valid`,
+                });
+            }
+
+            // Definir el filtro inicial
+            const filter: any = {
+                artistId: tokenData.artist.id
+            };
+
+            // Obtener fechas de inicio y fin de los parámetros de la solicitud
+            const startDate = req.query.startDate ? new Date(req.query.startDate.toString()) : null;
+            const endDate = req.query.endDate ? new Date(req.query.endDate.toString()) : null;
+
+            // Verificar si se proporcionaron fechas de inicio y fin
+            if (startDate && endDate) {
+                filter.createdAt = {
+                    gte: startDate,
+                    lte: endDate,
+                };
+            }
+
+            // Obtener todas las órdenes que cumplen con los filtros
+            const artistOrders = await prisma.order.findMany({
+                where: filter,
+            });
+
+            res.status(200).json({
+                orders: artistOrders,
+                message: `Orders fetched successfully for artist: ${tokenData.artist.name}`,
+            });
+
+        } else {
+            res.status(500).json({
+                message: `Unauthorized: Token not provided`,
+            });
+        }
+    } catch (error) {
+        console.error(error.message);
+    }
 };
 
 
