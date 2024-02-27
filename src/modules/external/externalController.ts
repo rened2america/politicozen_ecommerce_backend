@@ -3,7 +3,7 @@ import { prisma } from "../../database/initialConfig";
 import { withErrorHandlingDecorator } from "../../decorators/withErrorHandlingDecorator";
 import { validateRequestBody } from "../../utils/validation";
 import { connectionAws } from "../../utils/configAws";
-import productService from "../product/productService";
+import externalService from "./externalService";
 
 const uploadRequest = async (req: Request, res: Response) => {
     const token = req.header('Authorization');
@@ -47,7 +47,7 @@ const uploadRequest = async (req: Request, res: Response) => {
 
             const imageBuffer = await response.arrayBuffer();
 
-            const uploadedImage = await productService.uploadOneImage(
+            const uploadedImage = await externalService.uploadOneImage(
                 Buffer.from(imageBuffer),
                 `${tokenData.artist.name} by ${req.body.artistName}`,
                 s3
@@ -56,10 +56,21 @@ const uploadRequest = async (req: Request, res: Response) => {
             imageUrlLocation = uploadedImage.Location;
 
             // Guardamos en la base de datos la solicitud
+            const newRequest = await externalService.create({
+                urlImage: imageUrlLocation,
+                artistName: req.body.artistName,
+                templates: req.body.templates.join(','),
+                position: req.body.position,
+                color: req.body.colors.join(','),
+                genero: req.body.genders.join(','),
+                sizes: req.body.sizes.join(',')
+            });
 
             res.status(200).json({
                 message: `Authorized token: ${tokenData.token}, successful request`,
-                urlLocation: imageUrlLocation
+                urlLocation: imageUrlLocation,
+                request: newRequest
+
             })
 
         } else {
