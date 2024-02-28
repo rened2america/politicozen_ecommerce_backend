@@ -43,35 +43,35 @@ const uploadRequest = async (req: Request, res: Response) => {
                 res.status(500).json({
                     message: `Failed to fetch image`,
                 });
+            }else{
+                const imageBuffer = await response.arrayBuffer();
+
+                const uploadedImage = await externalService.uploadOneImage(
+                    Buffer.from(imageBuffer),
+                    `${tokenData.artist.name} by ${req.body.artistName}`,
+                    s3
+                );
+    
+                imageUrlLocation = uploadedImage.Location;
+    
+                // Guardamos en la base de datos la solicitud
+                const newRequest = await externalService.create({
+                    urlImage: imageUrlLocation,
+                    artistName: req.body.artistName,
+                    templates: req.body.templates.join(','),
+                    position: req.body.position,
+                    color: req.body.colors.join(','),
+                    genero: req.body.genders.join(','),
+                    sizes: req.body.sizes.join(',')
+                });
+    
+                res.status(200).json({
+                    message: `Authorized token: ${tokenData.token}, successful request`,
+                    urlLocation: imageUrlLocation,
+                    request: newRequest
+    
+                })
             }
-
-            const imageBuffer = await response.arrayBuffer();
-
-            const uploadedImage = await externalService.uploadOneImage(
-                Buffer.from(imageBuffer),
-                `${tokenData.artist.name} by ${req.body.artistName}`,
-                s3
-            );
-
-            imageUrlLocation = uploadedImage.Location;
-
-            // Guardamos en la base de datos la solicitud
-            const newRequest = await externalService.create({
-                urlImage: imageUrlLocation,
-                artistName: req.body.artistName,
-                templates: req.body.templates.join(','),
-                position: req.body.position,
-                color: req.body.colors.join(','),
-                genero: req.body.genders.join(','),
-                sizes: req.body.sizes.join(',')
-            });
-
-            res.status(200).json({
-                message: `Authorized token: ${tokenData.token}, successful request`,
-                urlLocation: imageUrlLocation,
-                request: newRequest
-
-            })
 
         } else {
             res.status(500).json({
@@ -126,8 +126,8 @@ const getSales = async (req: Request, res: Response) => {
             });
 
             res.status(200).json({
-                orders: artistOrders,
                 message: `Orders fetched successfully for artist: ${tokenData.artist.name}`,
+                orders: artistOrders
             });
 
         } else {
