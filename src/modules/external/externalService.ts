@@ -1,10 +1,20 @@
 import externalDAO from "./externalDAO";
 
-class ProductService {
+class ExternalService {
 
-    create = async (product: any) => {
-        const newRequest = await externalDAO.create(product);
+    createRequest = async (request: any) => {
+        const newRequest = await externalDAO.createRequest(request);
         return newRequest;
+    };
+
+    createToken = async (token: any) => {
+        const newToken = await externalDAO.createToken(token);
+        return newToken;
+    };
+
+    updateToken = async (tokenId:number, token: any) => {
+        const newToken = await externalDAO.updateToken(tokenId, token);
+        return newToken;
     };
 
     uploadOneImage = async (
@@ -24,4 +34,4 @@ class ProductService {
     };
 }
 
-export default new ProductService();
+export default new ExternalService();

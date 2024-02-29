@@ -4,6 +4,51 @@ import { withErrorHandlingDecorator } from "../../decorators/withErrorHandlingDe
 import { validateRequestBody } from "../../utils/validation";
 import { connectionAws } from "../../utils/configAws";
 import externalService from "./externalService";
+import jwt from 'jsonwebtoken';
+
+const generateToken = async (req: Request, res: Response) => {
+    try {
+        // Obtener el ID del artista del cuerpo de la solicitud
+        const artistId = parseInt(req.params.artistId);
+
+        // Buscar el artista en la base de datos
+        const artist = await prisma.artist.findUnique({
+            where: { id: artistId },
+            select: { id: true, name: true, email: true } // Seleccionar solo los campos necesarios
+        });
+
+        if (!artist) {
+            res.status(404).json({ message: 'Artist not found' });
+        }
+
+        // Verificar si ya existe un token para este artista
+        let existingToken = await prisma.tokens.findUnique({
+            where: { artistId }
+        });
+
+        // Generar el token JWT con los datos del artista como payload
+        const token = jwt.sign(
+            { id: artist.id, email: artist.email, date: new Date().toISOString().split('.')[0] },
+            process.env.JWT_SECRET_KEY!
+        );
+
+        // Si ya existe un token, actualizarlo con el nuevo token generado
+        if (existingToken) {
+            existingToken = await externalService.updateToken(existingToken.id, { token });
+        } else {
+            // Si no existe un token, crear uno nuevo
+            existingToken = await externalService.createToken({
+                token,
+                artistId: artist.id
+            });
+        }
+
+        // Devolver el token en la respuesta
+        res.status(200).json({ token: existingToken.token });
+    } catch (error) {
+        console.error(error.message);
+    }
+}
 
 const uploadRequest = async (req: Request, res: Response) => {
     const token = req.header('Authorization');
@@ -43,7 +88,7 @@ const uploadRequest = async (req: Request, res: Response) => {
                 res.status(500).json({
                     message: `Failed to fetch image`,
                 });
-            }else{
+            } else {
                 const imageBuffer = await response.arrayBuffer();
 
                 const uploadedImage = await externalService.uploadOneImage(
@@ -51,11 +96,11 @@ const uploadRequest = async (req: Request, res: Response) => {
                     `${tokenData.artist.name} by ${req.body.artistName}`,
                     s3
                 );
-    
+
                 imageUrlLocation = uploadedImage.Location;
-    
+
                 // Guardamos en la base de datos la solicitud
-                const newRequest = await externalService.create({
+                const newRequest = await externalService.createRequest({
                     urlImage: imageUrlLocation,
                     artistName: req.body.artistName,
                     templates: req.body.templates.join(','),
@@ -64,12 +109,12 @@ const uploadRequest = async (req: Request, res: Response) => {
                     genero: req.body.genders.join(','),
                     sizes: req.body.sizes.join(',')
                 });
-    
+
                 res.status(200).json({
                     message: `Authorized token: ${tokenData.token}, successful request`,
                     urlLocation: imageUrlLocation,
                     request: newRequest
-    
+
                 })
             }
 
@@ -140,11 +185,12 @@ const getSales = async (req: Request, res: Response) => {
     }
 };
 
-
+const generateTokenWithDecorators = withErrorHandlingDecorator(generateToken);
 const uploadOrderWithDecorators = withErrorHandlingDecorator(uploadRequest);
 const getSalesWithDecorators = withErrorHandlingDecorator(getSales);
 
 export const externalController = {
+    generateToken: generateTokenWithDecorators,
     uploadRequest: uploadOrderWithDecorators,
-    getSales: getSalesWithDecorators,
+    getSales: getSalesWithDecorators
 };
