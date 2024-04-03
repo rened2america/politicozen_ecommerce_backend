@@ -49,6 +49,7 @@ class ProductService {
 
     return Promise.all(uploadedImages);
   };
+
   transformImagesFromBase64ToBuffer = async (images: any) => {
     return Object.keys(images).map((keyValue: string) => {
       const imgBuffer = Buffer.from(images[keyValue].split(",")[1], "base64");

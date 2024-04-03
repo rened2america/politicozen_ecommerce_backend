@@ -31,6 +31,7 @@ model Artist {
   product Product[]
   order Order[]
   group Group[]
+  APItoken Tokens?                         // Nuevo campo para registrar la API Token
 } 
 
 model Order {
@@ -106,6 +107,7 @@ model Color {
   value String @db.VarChar(100) @unique
   products Product[]
 }
+
 model Type {
   id Int @id @default(autoincrement())
   value String @db.VarChar(100) @unique
@@ -143,9 +145,35 @@ model Group {
   name String
   artist Artist @relation(fields:[artistId], references: [id] )
   artistId Int
+  createdBy String @db.VarChar(500) @default("")            //Nuevo campo en la tabla de las Imagenes para determinar quien es el creador del Arte
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([artistId])
+}
+
+// Nuevo modelo para registrar los tokens para acceder a la API
+model Tokens {
+  id Int @id @default(autoincrement())
+  token String @db.VarChar(300) @unique 
+  artist Artist @relation(fields:[artistId], references: [id] )
+  artistId Int @unique         
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([artistId])
+}
+
+//Nuevo modelo para registrar las Peticiones que luego seran procesadas
+model Requests {
+  id Int @id @default(autoincrement())
+  urlImage String
+  artistName String
+  templates String
+  position String
+  color String
+  genero String
+  sizes String       
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // type ArtistsAlbums {
