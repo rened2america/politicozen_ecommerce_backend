@@ -163,14 +163,24 @@ const userIsLogin = async (req: Request, res: Response) => {
   });
 };
 
+const sendEmailTest = async (req: Request, res: Response) => {
+  await authService.sendEmailTest();
+
+  res.status(200).json({
+    message: "Mail Send",
+  });
+};
+
 const loginWithDecorators = withErrorHandlingDecorator(login);
 const signoutWithDecorators = withErrorHandlingDecorator(signout);
 const createAccountWithDecorators = withErrorHandlingDecorator(createAccount);
 const userIsLoginWithDecorators = withErrorHandlingDecorator(userIsLogin);
+const sendEmailTestWithDecorators = withErrorHandlingDecorator(sendEmailTest);
 
 export const authController = {
   login: loginWithDecorators,
   signout: signoutWithDecorators,
   createAccount: createAccountWithDecorators,
   userIsLogin: userIsLoginWithDecorators,
+  sendEmailTest: sendEmailTestWithDecorators,
 };

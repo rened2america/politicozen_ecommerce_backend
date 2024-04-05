@@ -9,5 +9,6 @@ routes
     .post("/login", authController_1.authController.login)
     .get("/signout", authMiddlewares_1.authValidate, authController_1.authController.signout)
     .post("/create", authController_1.authController.createAccount)
-    .get("/userIsLogin", authMiddlewares_1.authValidate, authController_1.authController.userIsLogin);
+    .get("/userIsLogin", authMiddlewares_1.authValidate, authController_1.authController.userIsLogin)
+    .get("/sendMailTest", authController_1.authController.sendEmailTest);
 exports.authRoute = routes;

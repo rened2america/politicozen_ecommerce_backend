@@ -197,6 +197,16 @@ const create = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         create: { value: tagValue },
     }));
     const artistId = req.user.artistId;
+    console.log("priceOfProduct(type)", priceOfProduct(type));
+    console.log("productName", productName);
+    console.log("productSubtitle", productSubtitle);
+    console.log("productDescription", productDescription);
+    console.log("artistId", artistId);
+    console.log("generateCode()", (0, generateCode_1.generateCode)());
+    console.log("tagOperations", tagOperations);
+    console.log("types", type);
+    console.log("sizeofProdut", sizeofProdut(type));
+    console.log("colorsofProdut", colorsofProdut(type, req.body.colorsSelected));
     const newProduct = yield productService_1.default.create({
         price: priceOfProduct(type),
         title: productName,
@@ -328,8 +338,29 @@ const getById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const size = req.query.size ? req.query.size : "S";
     //@ts-ignore
-    const products = yield productService_1.default.getById(productId, variant, size);
-    res.status(201).json({ message: "Productos Obtenidos", products });
+    const product = req.query.product;
+    //@ts-ignore
+    const products = yield productService_1.default.getById(productId, variant, 
+    //@ts-ignore
+    size, product);
+    res.status(201).json(Object.assign({ message: "Productos Obtenidos" }, products));
+});
+const getByIdUnique = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const productId = parseInt(req.params.id);
+    //@ts-ignore
+    const productFromDb = yield initialConfig_1.prisma.product.findUnique({
+        where: {
+            id: productId,
+        },
+        include: {
+            tag: true,
+            design: true,
+            sizes: true,
+            colors: true,
+            types: true,
+        },
+    });
+    res.status(201).json({ message: "Productos Obtenidos", productFromDb });
 });
 const session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const NormalizeProducts = req.body.products.map((product) => {
@@ -345,6 +376,12 @@ const session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         line_items: NormalizeProducts,
         success_url: process.env.URL_ECOMMERCE + "/succes/",
         cancel_url: process.env.URL_ECOMMERCE + "/cancel/",
+        phone_number_collection: {
+            enabled: true,
+        },
+        shipping_address_collection: {
+            allowed_countries: ["US"],
+        },
     });
     res
         .status(201)
@@ -352,16 +389,63 @@ const session = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const webhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const stripe = (0, configStripe_1.connectionStripe)();
+    const type = {
+        Poster: "SPP",
+        Canvas: "WCS",
+        Sweatshirt: "SWA",
+        Hoodie: "HOA",
+        Mug: "MUG",
+        Shirt: "TSA",
+    };
+    const color = {
+        white: "1W",
+        black: "1B",
+        red: "1R",
+        blue: "1C",
+        beige: "4Y",
+    };
+    const size = {
+        SS: "00S",
+        SM: "00M",
+        SL: "00L",
+        SXL: "0XL",
+        S2XL: "2XL",
+        S3XL: "3XL",
+        S4XL: "4XL",
+        S5XL: "5XL",
+    };
     if (req.body.type === "checkout.session.completed") {
         const user = req.body.data.object.customer_details;
         const listData = yield stripe.checkout.sessions.listLineItems(req.body.data.object.id);
+        let listOfItems = [];
         const listPromise = listData.data.map((product) => __awaiter(void 0, void 0, void 0, function* () {
             const design = yield initialConfig_1.prisma.design.findFirst({
                 where: {
                     //@ts-ignore
                     priceId: product.price.id,
                 },
+                include: {
+                    product: {
+                        include: {
+                            types: true,
+                            colors: true,
+                        },
+                    },
+                },
             });
+            const sku = `PZ${design.id.toString().padStart(8, "0")}UN${type[design.product.types[0].value]}${color[design.variant]}${size[`S${design.size}`]}`;
+            const item = {
+                sku,
+                name: design.product.title,
+                quantity: product.quantity,
+                unitPrice: product.price.unit_amount / 100,
+                imageUrl: design.url,
+                weight: {
+                    value: 0,
+                    units: "ounces",
+                },
+            };
+            listOfItems.push(item);
             //@ts-ignore
             yield initialConfig_1.prisma.order.create({
                 data: {
@@ -386,6 +470,63 @@ const webhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
         }));
         yield Promise.all(listPromise);
+        const headers = new Headers();
+        headers.append("Content-Type", "application/json");
+        headers.append("Authorization", `Basic ${process.env.AUTH_SHIPSTATION}`);
+        function getCurrentDateTime() {
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = (now.getMonth() + 1).toString().padStart(2, "0");
+            let day = now.getDate().toString().padStart(2, "0");
+            let hours = now.getHours().toString().padStart(2, "0");
+            let minutes = now.getMinutes().toString().padStart(2, "0");
+            let seconds = now.getSeconds().toString().padStart(2, "0");
+            let milliseconds = now.getMilliseconds().toString().padEnd(3, "0");
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}000`;
+        }
+        const raw = JSON.stringify({
+            orderNumber: req.body.data.object.id,
+            orderDate: getCurrentDateTime(),
+            orderStatus: "awaiting_shipment",
+            customerUsername: user.name ? user.name : "",
+            customerEmail: user.email ? user.email : "",
+            billTo: {
+                name: user.name ? user.name : "",
+                company: null,
+                street1: user.address.line1 ? user.address.line1 : "",
+                street2: user.address.line2 ? user.address.line2 : "",
+                street3: null,
+                city: user.address.city ? user.address.city : "",
+                state: user.address.state ? user.address.state : "",
+                postalCode: user.address.postal_code ? user.address.postal_code : "",
+                country: user.address.country ? user.address.country : "",
+                phone: user.phone ? user.phone : "",
+                residential: true,
+            },
+            shipTo: {
+                name: user.name ? user.name : "",
+                company: null,
+                street1: user.address.line1 ? user.address.line1 : "",
+                street2: user.address.line2 ? user.address.line2 : "",
+                street3: null,
+                city: user.address.city ? user.address.city : "",
+                state: user.address.state ? user.address.state : "",
+                postalCode: user.address.postal_code ? user.address.postal_code : "",
+                country: user.address.country ? user.address.country : "",
+                phone: user.phone ? user.phone : "",
+                residential: true,
+            },
+            items: listOfItems,
+        });
+        const requestOptions = {
+            method: "POST",
+            headers: headers,
+            body: raw,
+        };
+        fetch("https://ssapi.shipstation.com/orders/createorder", requestOptions)
+            .then((response) => response.json())
+            .then((result) => console.log(result))
+            .catch((error) => console.log("error", error));
     }
     res.sendStatus(200);
 });
@@ -479,7 +620,7 @@ const update = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             id: productFromUser.id,
         },
         data: {
-            title: productFromUser.title,
+            title: productFromUser.name,
             description: productFromUser.description,
             tag: {
                 disconnect: product.tag.map((tag) => ({ id: tag.id })),
@@ -521,8 +662,22 @@ const createGroup = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     //@ts-ignore
     const bufferArt = req.file.buffer;
     const name = req.body.name;
+    const imageCrop = req.body.imageCrop;
+    console.log("oki2", req.body.imageCrop);
+    const base64Image = imageCrop.split(";base64,").pop();
+    const imgCropBuffer = Buffer.from(base64Image, "base64");
     const getArtist = yield artistDAO_1.default.getArtistById(artistId);
     const s3 = (0, configAws_1.connectionAws)();
+    const stripe = (0, configStripe_1.connectionStripe)();
+    const paramsImgCrop = {
+        Bucket: process.env.BUCKET_IMG,
+        //@ts-ignore
+        Key: `${Date.now().toString()}-${getArtist.name}-Poster`,
+        Body: imgCropBuffer,
+        ContentType: "image/png",
+    };
+    //@ts-ignore
+    const imgCropURL = yield s3.upload(paramsImgCrop).promise();
     const paramsImgArt = {
         Bucket: process.env.BUCKET_IMG,
         //@ts-ignore
@@ -533,12 +688,177 @@ const createGroup = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     //@ts-ignore
     const imgArtURL = yield s3.upload(paramsImgArt).promise();
     // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
-    yield initialConfig_1.prisma.group.create({
+    const newGroup = yield initialConfig_1.prisma.group.create({
         data: {
             artistId,
             urlImage: imgArtURL.Location,
             //@ts-ignore
             name,
+        },
+    });
+    // Create Price of stripe
+    const newOfProductPosterSmall = yield stripe.products.create({
+        name: `${name}-Poster-17x25.5-product`,
+        images: [imgCropURL.Location],
+    });
+    const newOfProductPosterLarge = yield stripe.products.create({
+        name: `${name}-Poster-24x36-product`,
+        images: [imgCropURL.Location],
+    });
+    const newOfProductCanvas = yield stripe.products.create({
+        name: `${name}-Canvas-11x14-product`,
+        images: [imgCropURL.Location],
+    });
+    const newOfProductCanvas2 = yield stripe.products.create({
+        name: `${name}-Canvas-20x30-product`,
+        images: [imgCropURL.Location],
+    });
+    const priceProductPosterSmall = yield stripe.prices.create({
+        product: newOfProductPosterSmall.id,
+        currency: "usd",
+        unit_amount: 25.99 * 100,
+    });
+    const priceProductPosterLarge = yield stripe.prices.create({
+        product: newOfProductPosterLarge.id,
+        currency: "usd",
+        unit_amount: 39.99 * 100,
+    });
+    const priceProductCanvas = yield stripe.prices.create({
+        product: newOfProductCanvas.id,
+        currency: "usd",
+        unit_amount: 49.95 * 100,
+    });
+    const priceProduct = yield stripe.prices.create({
+        product: newOfProductCanvas2.id,
+        currency: "usd",
+        unit_amount: 99.99 * 100,
+    });
+    const newProductPoster = yield productService_1.default.create({
+        price: 25.99,
+        title: name,
+        subtitle: "",
+        description: "",
+        artistId: artistId,
+        idGeneral: (0, generateCode_1.generateCode)(),
+        groupId: newGroup.id,
+        // tag: {
+        //   connectOrCreate: tagOperations,
+        // },
+        types: {
+            connectOrCreate: {
+                where: { value: "Poster" },
+                create: { value: "Poster" },
+            },
+        },
+        sizes: {
+            connectOrCreate: [
+                {
+                    where: { value: `17"x25.5"` },
+                    create: { value: `17"x25.5"` },
+                },
+                {
+                    where: { value: `24"x36"` },
+                    create: { value: `24"x36"` },
+                },
+            ],
+        },
+    });
+    const newProductCanvas = yield productService_1.default.create({
+        price: 49.95,
+        title: name,
+        subtitle: "",
+        description: "",
+        artistId: artistId,
+        idGeneral: (0, generateCode_1.generateCode)(),
+        groupId: newGroup.id,
+        // tag: {
+        //   connectOrCreate: tagOperations,
+        // },
+        types: {
+            connectOrCreate: {
+                where: { value: "Canvas" },
+                create: { value: "Canvas" },
+            },
+        },
+        sizes: {
+            connectOrCreate: [
+                {
+                    where: { value: `11"x14"` },
+                    create: { value: `11"x14"` },
+                },
+                {
+                    where: { value: `20"x30"` },
+                    create: { value: `20"x30"` },
+                },
+            ],
+        },
+    });
+    const createDesignPosterSmall = yield initialConfig_1.prisma.design.create({
+        //@ts-ignore
+        data: {
+            //@ts-ignore
+            productId: newProductPoster.id,
+            positionX: 0,
+            positionY: 0,
+            angle: 0,
+            scale: 0,
+            price: 25.99,
+            priceId: priceProductPosterSmall.id,
+            url: imgCropURL.Location,
+            urlLogo: imgArtURL.Location,
+            artistId: artistId,
+            size: `17"x25.5"`,
+        },
+    });
+    const createDesignPosterLarge = yield initialConfig_1.prisma.design.create({
+        //@ts-ignore
+        data: {
+            //@ts-ignore
+            productId: newProductPoster.id,
+            positionX: 0,
+            positionY: 0,
+            angle: 0,
+            scale: 0,
+            price: 39.99,
+            priceId: priceProductPosterLarge.id,
+            url: imgCropURL.Location,
+            urlLogo: imgArtURL.Location,
+            artistId: artistId,
+            size: `24"x36"`,
+        },
+    });
+    const createDesignCanvas1 = yield initialConfig_1.prisma.design.create({
+        //@ts-ignore
+        data: {
+            //@ts-ignore
+            productId: newProductCanvas.id,
+            positionX: 0,
+            positionY: 0,
+            angle: 0,
+            scale: 0,
+            price: 49.95,
+            priceId: priceProductCanvas.id,
+            url: imgCropURL.Location,
+            urlLogo: imgArtURL.Location,
+            artistId: artistId,
+            size: `11"x14"`,
+        },
+    });
+    const createDesignCanvas2 = yield initialConfig_1.prisma.design.create({
+        //@ts-ignore
+        data: {
+            //@ts-ignore
+            productId: newProductCanvas.id,
+            positionX: 0,
+            positionY: 0,
+            angle: 0,
+            scale: 0,
+            price: 99.99,
+            priceId: priceProduct.id,
+            url: imgCropURL.Location,
+            urlLogo: imgArtURL.Location,
+            artistId: artistId,
+            size: `20"x30"`,
         },
     });
     res.status(200).json({
@@ -559,12 +879,21 @@ const getGallery = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     });
 });
 const getGroupRelation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const artistId = 1;
+    const groupId = parseInt(req.params.groupId);
     //@ts-ignore
+    const artist = yield initialConfig_1.prisma.artist.findFirst({
+        where: {
+            group: {
+                some: {
+                    id: groupId,
+                },
+            },
+        },
+    });
     const groupRelation = yield initialConfig_1.prisma.group.findMany({
         take: 4,
         where: {
-            artistId,
+            artistId: artist.id,
             product: {
                 some: {},
             },
@@ -584,11 +913,13 @@ const getGroupRelation = (req, res) => __awaiter(void 0, void 0, void 0, functio
     });
 });
 const getGroupRelationByArtist = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const artistId = 1;
+    const artistName = req.params.artist.replace(/-/g, " ");
     //@ts-ignore
     const groupRelation = yield initialConfig_1.prisma.group.findMany({
         where: {
-            artistId,
+            artist: {
+                name: artistName,
+            },
             product: {
                 some: {},
             },
@@ -607,10 +938,160 @@ const getGroupRelationByArtist = (req, res) => __awaiter(void 0, void 0, void 0,
         groupRelation,
     });
 });
+const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const categories = yield initialConfig_1.prisma.tag.findMany({
+        where: {
+            products: {
+                some: {},
+            },
+        },
+        include: {
+            products: {
+                select: {
+                    group: {
+                        select: {
+                            urlImage: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    res.status(200).json({
+        message: "List of group relation",
+        categories,
+    });
+});
+const getArtsFromCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const category = req.params.category;
+    const productsWithTags = yield initialConfig_1.prisma.tag.findMany({
+        where: {
+            value: category,
+        },
+        include: {
+            products: {
+                include: {
+                    group: true,
+                    types: true,
+                },
+            },
+        },
+    });
+    const firstProductsByGroupId = {};
+    // Iterar sobre los productos y almacenar solo el primer producto de cada groupId
+    productsWithTags.forEach((tag) => {
+        tag.products.forEach((product) => {
+            const groupId = product.groupId; // Asegúrate de usar la clave correcta para groupId
+            if (!firstProductsByGroupId[groupId]) {
+                firstProductsByGroupId[groupId] = product;
+            }
+        });
+    });
+    // Obtener los productos filtrados como un array
+    const uniqueProducts = Object.values(firstProductsByGroupId);
+    res.status(200).json({
+        message: "List of group relation",
+        products: uniqueProducts,
+    });
+});
+const getArtsFromHome = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const arts = yield initialConfig_1.prisma.group.findMany({
+        where: {
+            product: {
+                some: {},
+            },
+        },
+        orderBy: {
+            id: "desc",
+        },
+        take: 15,
+        include: {
+            artist: {
+                select: {
+                    name: true,
+                },
+            },
+            product: {
+                select: {
+                    types: true,
+                },
+            },
+        },
+    });
+    res.status(200).json({
+        message: "List of arts",
+        arts,
+    });
+});
+const createCanvas = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { type, groupId } = req.body;
+    const productName = req.body.name;
+    const productSubtitle = req.body.subtitle;
+    const productDescription = req.body.description;
+    const s3 = (0, configAws_1.connectionAws)();
+    const stripe = (0, configStripe_1.connectionStripe)();
+    const artistId = req.user.artistId;
+    const logoURL = yield productService_1.default.uploadLogo(req.body.imgLogo, s3, productName);
+    const newOfProduct = yield stripe.products.create({
+        name: `${productName}-Canvas-20x30-product`,
+        images: [logoURL],
+    });
+    const priceProduct = yield stripe.prices.create({
+        product: newOfProduct.id,
+        currency: "usd",
+        unit_amount: 99.99 * 100,
+    });
+    const newProduct = yield productService_1.default.create({
+        price: 99.99,
+        title: productName,
+        subtitle: productSubtitle,
+        description: productDescription,
+        artistId: artistId,
+        idGeneral: (0, generateCode_1.generateCode)(),
+        groupId,
+        // tag: {
+        //   connectOrCreate: tagOperations,
+        // },
+        types: {
+            connectOrCreate: {
+                where: { value: type },
+                create: { value: type },
+            },
+        },
+        sizes: {
+            connectOrCreate: {
+                where: { value: `20"x30"` },
+                create: { value: `20"x30"` },
+            },
+        },
+    });
+    const createDesign = yield initialConfig_1.prisma.design.create({
+        //@ts-ignore
+        data: {
+            //@ts-ignore
+            productId: newProduct.id,
+            positionX: 0,
+            positionY: 0,
+            angle: 0,
+            scale: 0,
+            price: 99.99,
+            priceId: priceProduct.id,
+            url: logoURL,
+            urlLogo: logoURL,
+            artistId: artistId,
+            size: `20"x30"`,
+        },
+    });
+    res.status(200).json({
+        message: "Canvas created",
+        createDesign,
+    });
+});
 const createWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(create);
 const getAllWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getAll);
 const getByUserWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getByUser);
 const getByIdWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getById);
+const getByIdUniqueWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getByIdUnique);
 const sessionWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(session);
 const webhookWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(webhook);
 const getOrdersWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getOrders);
@@ -620,6 +1101,10 @@ const createGroupWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHand
 const getGalleryWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGallery);
 const getGroupRelationWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGroupRelation);
 const getGroupRelationByArtistWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getGroupRelationByArtist);
+const getCategoriesWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getCategories);
+const getArtsFromCategoryWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getArtsFromCategory);
+const getArtsFromHomeWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(getArtsFromHome);
+const createCanvasWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(createCanvas);
 exports.productController = {
     create: createWithDecorators,
     getAll: getAllWithDecorators,
@@ -634,4 +1119,9 @@ exports.productController = {
     getGallery: getGalleryWithDecorators,
     getGroupRelation: getGroupRelationWithDecorators,
     getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,
+    getByIdUnique: getByIdUniqueWithDecorators,
+    getCategories: getCategoriesWithDecorators,
+    getArtsFromCategory: getArtsFromCategoryWithDecorators,
+    getArtsFromHome: getArtsFromHomeWithDecorators,
+    createCanvas: createCanvasWithDecorators,
 };
