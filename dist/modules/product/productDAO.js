@@ -34,7 +34,6 @@ class ProductDAO {
             return allProducts;
         });
         this.getAll = (filters, page) => __awaiter(this, void 0, void 0, function* () {
-            console.log(page);
             const [allProducts, count] = yield initialConfig_1.prisma.$transaction([
                 initialConfig_1.prisma.product.findMany({
                     skip: (page.page - 1) * page.limit,
@@ -59,6 +58,11 @@ class ProductDAO {
                         tag: true,
                         types: true,
                         artist: true,
+                        group: {
+                            select: {
+                                id: true,
+                            },
+                        },
                     },
                 }),
                 initialConfig_1.prisma.product.count({
@@ -70,11 +74,11 @@ class ProductDAO {
             console.log(count);
             return { products: allProducts, count: count };
         });
-        this.getById = (id, variant, size) => __awaiter(this, void 0, void 0, function* () {
+        this.getById = (id, variant, size, product) => __awaiter(this, void 0, void 0, function* () {
             console.log("getById", id);
             const groupProduct = yield initialConfig_1.prisma.group.findUnique({
                 where: {
-                    id: 5,
+                    id,
                 },
                 include: {
                     artist: {
@@ -83,34 +87,81 @@ class ProductDAO {
                         },
                     },
                     product: {
-                        include: {
-                            design: true,
-                            sizes: true,
-                            colors: true,
-                            tag: true,
+                        select: {
                             types: true,
                         },
                     },
                 },
             });
-            const allProducts = yield initialConfig_1.prisma.product.findUnique({
+            const filterProductByGroup = yield initialConfig_1.prisma.product.findFirst({
                 where: {
-                    id,
-                },
-                include: {
-                    design: true,
-                    sizes: true,
-                    colors: true,
-                    tag: true,
-                    artist: {
-                        select: {
-                            name: true,
+                    groupId: groupProduct.id,
+                    types: {
+                        some: {
+                            value: product,
                         },
                     },
                 },
+                include: {
+                    sizes: true,
+                    colors: true,
+                    tag: true,
+                },
             });
-            console.log("allProducts", allProducts);
-            return groupProduct;
+            if (product === "Poster" || product === "Canvas") {
+                const filterDesignByProduct = yield initialConfig_1.prisma.design.findFirst({
+                    where: {
+                        productId: filterProductByGroup.id,
+                        size,
+                    },
+                });
+                return {
+                    groupProduct,
+                    filterProductByGroup,
+                    filterDesignByProduct,
+                };
+            }
+            const filterDesignByProduct = yield initialConfig_1.prisma.design.findFirst({
+                where: {
+                    productId: filterProductByGroup.id,
+                    variant,
+                    size,
+                },
+            });
+            console.log("groupProduct", groupProduct);
+            console.log("filterProductByGroup", filterProductByGroup);
+            console.log("filterDesignByProduct", filterDesignByProduct);
+            // const allProducts = await prisma.product.findUnique({
+            //   where: {
+            //     id,
+            //   },
+            //   include: {
+            //     group: {
+            //       include: {
+            //         product: {
+            //           select: {
+            //             types: true,
+            //           },
+            //         },
+            //       },
+            //     },
+            //     design: true,
+            //     sizes: true,
+            //     colors: true,
+            //     tag: true,
+            //     artist: {
+            //       select: {
+            //         name: true,
+            //       },
+            //     },
+            //   },
+            // });
+            console.log("allProducts", groupProduct);
+            return {
+                groupProduct,
+                filterProductByGroup,
+                filterDesignByProduct,
+            };
         });
     }
 }

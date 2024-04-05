@@ -144,13 +144,21 @@ const userIsLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         message: "user is login",
     });
 });
+const sendEmailTest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield authService_1.default.sendEmailTest();
+    res.status(200).json({
+        message: "Mail Send",
+    });
+});
 const loginWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(login);
 const signoutWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(signout);
 const createAccountWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(createAccount);
 const userIsLoginWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(userIsLogin);
+const sendEmailTestWithDecorators = (0, withErrorHandlingDecorator_1.withErrorHandlingDecorator)(sendEmailTest);
 exports.authController = {
     login: loginWithDecorators,
     signout: signoutWithDecorators,
     createAccount: createAccountWithDecorators,
     userIsLogin: userIsLoginWithDecorators,
+    sendEmailTest: sendEmailTestWithDecorators,
 };

@@ -12,15 +12,19 @@ const multer = require("multer");
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024, // limit file size to 10MB
+        fileSize: 30 * 1024 * 1024, // limit file size to 10MB
     },
 });
 const routes = (0, express_1.Router)();
 routes
     .post("/create", authMiddlewares_1.authValidate, productController_1.productController.create)
+    .post("/createCanvas", authMiddlewares_1.authValidate, productController_1.productController.createCanvas)
     .get("/all", productController_1.productController.getAll)
-    .get("/groupRelation", productController_1.productController.getGroupRelation)
-    .get("/groupRelation/:artist", productController_1.productController.getGroupRelation)
+    .get("/artsFromHome", productController_1.productController.getArtsFromHome)
+    .get("/categories", productController_1.productController.getCategories)
+    .get("/categories/:category", productController_1.productController.getArtsFromCategory)
+    .get("/groupRelation/section/:groupId", productController_1.productController.getGroupRelation)
+    .get("/groupRelation/:artist", productController_1.productController.getGroupRelationByArtist)
     .get("/allByUser", authMiddlewares_1.authValidate, productController_1.productController.getByUser)
     .post("/payment", productController_1.productController.session)
     .get("/infoorders/orders", authMiddlewares_1.authValidate, productController_1.productController.getOrders)
@@ -28,6 +32,7 @@ routes
     .get("/gallery", authMiddlewares_1.authValidate, productController_1.productController.getGallery)
     .post("/webhook", express_2.default.raw({ type: "application/json" }), productController_1.productController.webhook)
     .put("/", authMiddlewares_1.authValidate, productController_1.productController.update)
+    .get("/unique/:id", productController_1.productController.getByIdUnique)
     .delete("/:productId", authMiddlewares_1.authValidate, productController_1.productController.delete)
     .get("/:id", productController_1.productController.getById);
 exports.productRoute = routes;

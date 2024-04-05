@@ -27,8 +27,8 @@ class ProductService {
             const getProducts = yield productDAO_1.default.getAll(filters, page);
             return getProducts;
         });
-        this.getById = (id, variant, size) => __awaiter(this, void 0, void 0, function* () {
-            const getProducts = yield productDAO_1.default.getById(id, variant, size);
+        this.getById = (id, variant, size, product) => __awaiter(this, void 0, void 0, function* () {
+            const getProducts = yield productDAO_1.default.getById(id, variant, size, product);
             return getProducts;
         });
         this.uploadLogo = (logo, s3, productName) => __awaiter(this, void 0, void 0, function* () {

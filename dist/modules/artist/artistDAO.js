@@ -41,10 +41,7 @@ class ArtistDAO {
         this.getAll = (page, limit) => __awaiter(this, void 0, void 0, function* () {
             console.log(page);
             const [artists, count] = yield initialConfig_1.prisma.$transaction([
-                initialConfig_1.prisma.artist.findMany({
-                    skip: (page - 1) * limit,
-                    take: limit,
-                }),
+                initialConfig_1.prisma.artist.findMany(),
                 initialConfig_1.prisma.artist.count(),
             ]);
             return {
@@ -64,7 +61,6 @@ class ArtistDAO {
                         },
                     },
                     include: {
-                        design: true,
                         types: true,
                     },
                 }),
