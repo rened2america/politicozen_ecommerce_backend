@@ -171,7 +171,8 @@ model Requests {
   position String
   color String
   genero String
-  sizes String       
+  sizes String      
+  isCreated Boolean @default(false) 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -289,8 +289,68 @@ const create = async (req: Request, res: Response) => {
 
 const getByUser = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
+  const type = {
+    Poster: "SPP",
+    Canvas: "WCS",
+    Sweatshirt: "SWA",
+    Hoodie: "HOA",
+    Mug: "MUG",
+    Shirt: "TSA",
+  };
+
+  const color = {
+    white: "1W",
+    black: "1B",
+    red: "1R",
+    blue: "1C",
+    beige: "4Y",
+  };
+
+  const size = {
+    SS: "00S",
+    SM: "00M",
+    SL: "00L",
+    SXL: "0XL",
+    S2XL: "2XL",
+    S3XL: "3XL",
+    S4XL: "4XL",
+    S5XL: "5XL",
+    S11x14: "11x14",
+    S17x255: "17x255",
+  };
+
   const products = await productService.getByUser(artistId);
-  res.status(201).json({ message: "Producto Creado", products: products });
+  const newProducts = await Promise.all(
+    products.map(async (product) => {
+      const design = await prisma.design.findFirst({
+        where: {
+          //@ts-ignore
+          productId: product.id,
+        },
+        include: {
+          product: {
+            include: {
+              types: true,
+              colors: true,
+            },
+          },
+        },
+      });
+      console.log(design);
+      const sku = `PZ${design.id.toString().padStart(8, "0")}UN${
+        //@ts-ignore
+        type[design.product.types[0].value]
+      }${color[design.variant] ? color[design.variant] : "1W"}${
+        size[`S${design.size.replace(/[".]/g, "")}`]
+      }`;
+      console.log(sku);
+      return {
+        ...product,
+        id: sku,
+      };
+    })
+  );
+  res.status(201).json({ message: "Producto Creado", products: newProducts });
 };
 
 const getAll = async (req: Request, res: Response) => {

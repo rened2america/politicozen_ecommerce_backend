@@ -177,6 +177,17 @@ const getSales = async (req: Request, res: Response) => {
       // Obtener todas las órdenes que cumplen con los filtros
       const artistOrders = await prisma.order.findMany({
         where: filter,
+        select: {
+          id: true,
+          city: true,
+          state: true,
+          amount: true,
+          quantity: true,
+          priceId: true,
+          productName: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
 
       res.status(200).json({
