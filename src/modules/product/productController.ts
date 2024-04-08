@@ -337,16 +337,21 @@ const getByUser = async (req: Request, res: Response) => {
         },
       });
       console.log(design);
-      const sku = `PZ${design.id.toString().padStart(8, "0")}UN${
-        //@ts-ignore
-        type[design.product.types[0].value]
-      }${color[design.variant] ? color[design.variant] : "1W"}${
-        size[`S${design.size.replace(/[".]/g, "")}`]
-      }`;
+      const typeProduct = type[design.product.types[0].value];
+      const colorProduct =
+        typeProduct === "SPP"
+          ? "73"
+          : color[design.variant]
+          ? color[design.variant]
+          : "1W";
+      const sizeProduct = size[`S${design.size.replace(/[".]/g, "")}`];
+      const sku = `PZ${design.id
+        .toString()
+        .padStart(8, "0")}UN${typeProduct}${colorProduct}${sizeProduct}`;
       console.log(sku);
       return {
         ...product,
-        id: sku,
+        productId: sku,
       };
     })
   );
