@@ -315,8 +315,8 @@ const getByUser = async (req: Request, res: Response) => {
     S3XL: "3XL",
     S4XL: "4XL",
     S5XL: "5XL",
-    S11x14: "11x14",
-    S17x255: "17x255",
+    S11x14: "00S",
+    S17x255: "00L",
   };
 
   const products = await productService.getByUser(artistId);
