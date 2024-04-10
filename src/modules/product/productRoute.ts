@@ -6,7 +6,8 @@ const multer = require("multer");
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 30 * 1024 * 1024, // limit file size to 10MB
+    fileSize: 1024 * 1024 * 30, // limit file size to 10MB
+    fieldSize: 1024 * 1024 * 30, // límite del tamaño del campo a 10MB
   },
 });
 const routes = Router();
