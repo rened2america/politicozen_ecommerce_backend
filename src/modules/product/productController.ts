@@ -31,10 +31,10 @@ const create = async (req: Request, res: Response) => {
 
   const priceOfProduct = (typeValue: string) => {
     if (typeValue === "Sweatshirt") {
-      return 25.99;
+      return 29.99;
     }
     if (typeValue === "Shirt") {
-      return 15.99;
+      return 19.99;
     }
     if (typeValue === "Hoodie") {
       return 36.99;
