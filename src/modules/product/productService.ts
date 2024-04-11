@@ -117,7 +117,7 @@ class ProductService {
         const priceProduct = await stripe.prices.create({
           product: newProduct.id,
           currency: "usd",
-          unit_amount: price * 100,
+          unit_amount: Number((price * 100).toFixed(2)),
         });
 
         productsWithSize.push({
