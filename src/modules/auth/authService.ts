@@ -42,7 +42,7 @@ class AuthService {
 
     const msg = {
       to: email, // Change to your recipient
-      from: "renemeza.escamilla@gmail.com", // Change to your verified sender
+      from: "support@politicozen.com", // Change to your verified sender
       subject: "Confirm your email",
       text: "politicozen",
       html: `<!DOCTYPE html>
