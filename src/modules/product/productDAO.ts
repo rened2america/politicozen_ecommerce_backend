@@ -64,7 +64,21 @@ class ProductDAO {
     console.log(count);
     return { products: allProducts, count: count };
   };
-
+  getAllImages = async (productId: number) => {
+    console.log("productId: ", productId);
+    const images = await prisma.design.findMany({
+      where: {
+        productId: {
+          equals: productId
+        },
+      },
+      select: {
+        url: true
+      },
+      distinct: ['url'],
+    });
+    return { images };
+  };
   getById = async (
     id: number,
     variant: string,

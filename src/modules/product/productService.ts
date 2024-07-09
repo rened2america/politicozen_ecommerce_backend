@@ -13,6 +13,10 @@ class ProductService {
     const getProducts = await productDAO.getAll(filters, page);
     return getProducts;
   };
+  getAllImages = async (productId: number) => {
+    const images = await productDAO.getAllImages(productId);
+    return images;
+  }
   getById = async (id: number, variant: string, size: string, product) => {
     const getProducts = await productDAO.getById(id, variant, size, product);
     return getProducts;

@@ -427,6 +427,16 @@ const getAll = async (req: Request, res: Response) => {
   }
 };
 
+const getAllImages = async (req: Request, res: Response) => {
+  const productId: number = parseInt(req.params.productId);
+
+  const images = await productService.getAllImages(productId);
+
+  res.status(201).json({
+    images
+  });
+}
+
 const getById = async (req: Request, res: Response) => {
   const productId: number = parseInt(req.params.id);
   //@ts-ignore
@@ -1274,6 +1284,8 @@ const createCanvas = async (req: Request, res: Response) => {
 
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
+const getAllImagesWithDecorators = withErrorHandlingDecorator(getAllImages);
+
 const getByUserWithDecorators = withErrorHandlingDecorator(getByUser);
 const getByIdWithDecorators = withErrorHandlingDecorator(getById);
 const getByIdUniqueWithDecorators = withErrorHandlingDecorator(getByIdUnique);
@@ -1300,6 +1312,7 @@ const createCanvasWithDecorators = withErrorHandlingDecorator(createCanvas);
 export const productController = {
   create: createWithDecorators,
   getAll: getAllWithDecorators,
+  getAllImages: getAllImagesWithDecorators,
   getByUser: getByUserWithDecorators,
   getById: getByIdWithDecorators,
   session: sessionWithDecorators,

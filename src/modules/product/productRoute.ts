@@ -16,6 +16,7 @@ routes
   .post("/create", authValidate, productController.create)
   .post("/createCanvas", authValidate, productController.createCanvas)
   .get("/all", productController.getAll)
+  .get("/allImages/:productId", productController.getAllImages)
   .get("/artsFromHome", productController.getArtsFromHome)
   .get("/categories", productController.getCategories)
   .get("/categories/:category", productController.getArtsFromCategory)
