@@ -23,6 +23,7 @@ const create = async (req: Request, res: Response) => {
   console.log("Distance rounded x", xDecimal);
   console.log("Distance rounded y", yDecimal);
   const productName = req.body.name;
+  const productPrice = req.body.price;
   const productSubtitle = req.body.subtitle;
   const productDescription = req.body.description;
 
@@ -231,7 +232,7 @@ const create = async (req: Request, res: Response) => {
   console.log("colorsofProdut", colorsofProdut(type, req.body.colorsSelected));
 
   const newProduct = await productService.create({
-    price: priceOfProduct(type),
+    price: productPrice,
     title: productName,
     subtitle: productSubtitle,
     description: productDescription,
@@ -268,7 +269,7 @@ const create = async (req: Request, res: Response) => {
       angle: angleDecimal,
       scale: scaleDecimal,
       variant: product.color,
-      price: priceOfProduct(type),
+      price: productPrice,
       priceId: product.id,
       url: product.imgProductURL,
       urlLogo: logoURL,
