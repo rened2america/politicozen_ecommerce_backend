@@ -9,6 +9,15 @@ class AuthDAO {
     return newUser;
   };
 
+  userExists = async (email: string) => {
+    const user = await prisma.artist.findFirst({
+      where: {
+        email: email
+      }
+    });
+    return !!user;
+  };
+
   getUserByEmail = async (email: string) => {
     const user = await prisma.artist.findUnique({
       where: {
