@@ -1117,7 +1117,7 @@ const getGroupRelationByArtist = async (req: Request, res: Response) => {
 };
 
 const getCategories = async (req: Request, res: Response) => {
-  const categories = await prisma.tag.findMany({
+  const categories = await prisma.type.findMany({
     where: {
       products: {
         some: {},
@@ -1143,7 +1143,7 @@ const getCategories = async (req: Request, res: Response) => {
 
 const getArtsFromCategory = async (req: Request, res: Response) => {
   const category = req.params.category;
-  const productsWithTags = await prisma.tag.findMany({
+  const productsWithTags = await prisma.type.findMany({
     where: {
       value: category,
     },
