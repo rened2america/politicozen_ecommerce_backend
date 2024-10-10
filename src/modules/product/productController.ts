@@ -34,7 +34,7 @@ const create = async (req: Request, res: Response) => {
     if (typeValue === "Sweatshirt") {
       return 29.99;
     }
-    if (typeValue === "Shirt") {
+    if (typeValue === "T-Shirt") {
       return 19.99;
     }
     if (typeValue === "Hoodie") {
@@ -507,12 +507,12 @@ const session = async (req: Request, res: Response) => {
 const webhook = async (req: Request, res: Response) => {
   const stripe = connectionStripe();
   const type = {
-    Poster: "SPP",
-    Canvas: "WCS",
-    Sweatshirt: "SWA",
-    Hoodie: "HOA",
-    Mug: "MUG",
-    Shirt: "TSA",
+    "Poster": "SPP",
+    "Canvas": "WCS",
+    "Sweatshirt": "SWA",
+    "Hoodie": "HOA",
+    "Mug": "MUG",
+    "T-Shirt": "TSA",
   };
 
   const color = {
