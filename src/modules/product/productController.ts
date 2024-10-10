@@ -1179,16 +1179,37 @@ const getArtsFromCategory = async (req: Request, res: Response) => {
 };
 
 const getArtsFromHome = async (req: Request, res: Response) => {
-  const arts = await prisma.group.findMany({
+  // Fetch all IDs matching the where clause
+  const artIds = await prisma.group.findMany({
     where: {
       product: {
         some: {},
       },
     },
-    orderBy: {
-      id: "desc",
+    select: {
+      id: true,
     },
-    take: 15,
+  });
+
+  // Extract the IDs into an array
+  const ids = artIds.map((art) => art.id);
+
+  // Shuffle the IDs to randomize them
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+
+  // Select the first 15 IDs from the shuffled array
+  const randomIds = ids.slice(0, 15);
+
+  // Fetch the arts with the selected random IDs
+  const arts = await prisma.group.findMany({
+    where: {
+      id: {
+        in: randomIds,
+      },
+    },
     include: {
       artist: {
         select: {
@@ -1202,8 +1223,9 @@ const getArtsFromHome = async (req: Request, res: Response) => {
       },
     },
   });
+
   res.status(200).json({
-    message: "List of arts",
+    message: "List of random arts",
     arts,
   });
 };
