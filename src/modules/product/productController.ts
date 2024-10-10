@@ -403,7 +403,7 @@ const getAll = async (req: Request, res: Response) => {
     console.log(arrayFilter);
     const products = await productService.getAll(arrayFilter, { page, limit });
     res.status(201).json({
-      message: "Productos Obtenidos",
+      message: "Products Obtained",
       products: products.products,
       count: products.count,
     });

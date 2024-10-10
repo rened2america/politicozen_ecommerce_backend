@@ -24,24 +24,22 @@ class ProductDAO {
   };
 
   getAll = async (filters: any, page: any) => {
+    
+    if(!filters.types){
+      filters.push({
+        types: {
+          none: {
+            value: { in: ["Canvas"] }
+          }
+        }
+      });
+    }    
     const [allProducts, count] = await prisma.$transaction([
       prisma.product.findMany({
         skip: (page.page - 1) * page.limit,
         take: page.limit,
         where: {
           AND: filters,
-          // AND: {
-          //   artist: {
-          //     OR: [
-          //       {
-          //         name: "Rene Alberto Meza Escamilla",
-          //       },
-          //       {
-          //         name: "Rene Meza",
-          //       },
-          //     ],
-          //   },
-          // },
         },
         include: {
           design: true,
@@ -61,7 +59,6 @@ class ProductDAO {
         },
       }),
     ]);
-    console.log(count);
     return { products: allProducts, count: count };
   };
   getAllImages = async (productId: number) => {
