@@ -24,8 +24,10 @@ class ProductDAO {
   };
 
   getAll = async (filters: any, page: any) => {
-    
-    if(!filters.types){
+    console.log("Before filter: ", filters)
+    const hasTypefilter = filters.some((item: any) => item.hasOwnProperty('types'));
+    // If no filter is applied then we shouldn't show Canvases
+    if (!hasTypefilter) {
       filters.push({
         types: {
           none: {
@@ -33,7 +35,8 @@ class ProductDAO {
           }
         }
       });
-    }    
+    }
+    console.log(filters)
     const [allProducts, count] = await prisma.$transaction([
       prisma.product.findMany({
         skip: (page.page - 1) * page.limit,
