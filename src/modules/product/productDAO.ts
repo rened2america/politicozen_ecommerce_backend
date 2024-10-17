@@ -179,6 +179,35 @@ class ProductDAO {
       filterDesignByProduct,
     };
   };
+  generateRandomArt = async () => {
+    const artIds = await prisma.group.findMany({
+      where: {
+        product: {
+          some: {},
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // Extract the IDs into an array
+    const ids = artIds.map((art) => ({ groupId: art.id }));
+
+    // Shuffle the IDs to randomize them
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+
+    // Select the first 15 IDs from the shuffled array
+    const randomIds = ids.slice(0, 15);
+
+    const deleteAllRandomArts = await prisma.randomArtsHomepage.deleteMany({});
+    console.log(`${deleteAllRandomArts.count} arts deleted from randomArts table`)
+    const createRandomArts = await prisma.randomArtsHomepage.createMany({ data: randomIds })
+    console.log(`${createRandomArts.count} random arts inserted to randomArts table`)
+  }
 }
 
 export default new ProductDAO();

@@ -72,9 +72,9 @@ model Product {
   id Int @id @default(autoincrement())
   price Decimal @db.Decimal(8,2)
   title String
-  subtitle  String
+  subtitle  String @db.VarChar(400)
   idGeneral String
-  description String
+  description String @db.VarChar(400)
   tag Tag[]
   design Design[]
   sizes Size[]
@@ -92,7 +92,7 @@ model Product {
 
 model Tag {
   id Int @id @default(autoincrement())
-  value String @db.VarChar(10) @unique
+  value String @db.VarChar(50) @unique
   products Product[]
 }
 
@@ -149,6 +149,13 @@ model Group {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([artistId])
+  RandomArtsHomepage RandomArtsHomepage[]
+}
+
+model RandomArtsHomepage {
+  id     Int  @id @default(autoincrement())
+  groupId Int
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 // Nuevo modelo para registrar los tokens para acceder a la API

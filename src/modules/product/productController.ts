@@ -343,8 +343,8 @@ const getByUser = async (req: Request, res: Response) => {
         typeProduct === "SPP"
           ? "73"
           : color[design.variant]
-          ? color[design.variant]
-          : "1W";
+            ? color[design.variant]
+            : "1W";
       const sizeProduct = size[`S${design.size.replace(/[".]/g, "")}`];
       const sku = `PZ${design.id
         .toString()
@@ -559,9 +559,8 @@ const webhook = async (req: Request, res: Response) => {
         },
       });
 
-      const sku = `PZ${design.id.toString().padStart(8, "0")}UN${
-        type[design.product.types[0].value]
-      }${color[design.variant]}${size[`S${design.size}`]}`;
+      const sku = `PZ${design.id.toString().padStart(8, "0")}UN${type[design.product.types[0].value]
+        }${color[design.variant]}${size[`S${design.size}`]}`;
 
       const item = {
         sku,
@@ -1179,50 +1178,18 @@ const getArtsFromCategory = async (req: Request, res: Response) => {
 };
 
 const getArtsFromHome = async (req: Request, res: Response) => {
-  // Fetch all IDs matching the where clause
-  const artIds = await prisma.group.findMany({
-    where: {
-      product: {
-        some: {},
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  // Extract the IDs into an array
-  const ids = artIds.map((art) => art.id);
-
-  // Shuffle the IDs to randomize them
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-  }
-
-  // Select the first 15 IDs from the shuffled array
-  const randomIds = ids.slice(0, 15);
-
-  // Fetch the arts with the selected random IDs
-  const arts = await prisma.group.findMany({
-    where: {
-      id: {
-        in: randomIds,
-      },
-    },
+  const randomArts = await prisma.randomArtsHomepage.findMany({
     include: {
-      artist: {
-        select: {
-          name: true,
-        },
-      },
-      product: {
-        select: {
-          types: true,
-        },
-      },
-    },
+      group: {
+        include: {
+          artist: true
+        }
+      }
+    }
   });
+  // Extracting group objects
+  const arts = randomArts.map((art) => art.group);
+
 
   res.status(200).json({
     message: "List of random arts",
@@ -1305,6 +1272,18 @@ const createCanvas = async (req: Request, res: Response) => {
   });
 };
 
+const generateRandomArt = async (req: Request, res: Response) => {
+  const password = req.params.password;
+  if (!password || password !== "d2ArtGen2024") {
+    res.status(403).json({ message: "Incorrect password" });
+    return;
+  }
+
+  await productService.generateRandomArt();
+
+  res.status(200).json({ message: "Random arts generated" })
+}
+
 const createWithDecorators = withErrorHandlingDecorator(create);
 const getAllWithDecorators = withErrorHandlingDecorator(getAll);
 const getAllImagesWithDecorators = withErrorHandlingDecorator(getAllImages);
@@ -1331,6 +1310,7 @@ const getArtsFromCategoryWithDecorators =
 const getArtsFromHomeWithDecorators =
   withErrorHandlingDecorator(getArtsFromHome);
 const createCanvasWithDecorators = withErrorHandlingDecorator(createCanvas);
+const generateRandomArtWithDecorators = withErrorHandlingDecorator(generateRandomArt);
 
 export const productController = {
   create: createWithDecorators,
@@ -1352,4 +1332,5 @@ export const productController = {
   getArtsFromCategory: getArtsFromCategoryWithDecorators,
   getArtsFromHome: getArtsFromHomeWithDecorators,
   createCanvas: createCanvasWithDecorators,
+  generateRandomArt: generateRandomArtWithDecorators
 };

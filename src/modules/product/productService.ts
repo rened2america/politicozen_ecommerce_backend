@@ -135,6 +135,9 @@ class ProductService {
 
     return Promise.all(productsCreated);
   };
+  generateRandomArt = async () => {
+    await productDAO.generateRandomArt();
+  }
 }
 
 export default new ProductService();
