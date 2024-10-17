@@ -201,7 +201,7 @@ class ProductDAO {
     }
 
     // Select the first 15 IDs from the shuffled array
-    const randomIds = ids.slice(0, 15);
+    const randomIds = ids.slice(0, 16);
 
     const deleteAllRandomArts = await prisma.randomArtsHomepage.deleteMany({});
     console.log(`${deleteAllRandomArts.count} arts deleted from randomArts table`)
