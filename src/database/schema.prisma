@@ -84,10 +84,13 @@ model Product {
   artistId Int
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
+  category Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([groupId])
   @@index([artistId])
+  @@index([categoryId])
 }
 
 model Tag {
@@ -112,6 +115,11 @@ model Type {
   id Int @id @default(autoincrement())
   value String @db.VarChar(100) @unique
   products Product[]
+}
+model Category {
+  id Int @id @default(autoincrement())
+  value String @db.VarChar(100) @unique  
+  product Product[]
 }
 
 // --------- Product END
