@@ -32,6 +32,8 @@ routes
     upload.single("art"),
     productController.createGroup
   )
+  .put("/updateArt", authValidate, productController.updateArt)
+  .delete("/art/:artId", authValidate, productController.deleteArt)
   .get("/gallery", authValidate, productController.getGallery)
   .post(
     "/webhook",

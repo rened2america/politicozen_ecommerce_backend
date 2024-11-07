@@ -208,6 +208,16 @@ class ProductDAO {
     const createRandomArts = await prisma.randomArtsHomepage.createMany({ data: randomIds })
     console.log(`${createRandomArts.count} random arts inserted to randomArts table`)
   }
+
+  artExist = async (artId) => {
+    const art = await prisma.group.findFirst({
+      where: {
+        id: artId
+      }
+    });
+
+    return !!art;
+  }
 }
 
 export default new ProductDAO();

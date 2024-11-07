@@ -826,8 +826,8 @@ const createGroup = async (req: Request, res: Response) => {
   const bufferArt = req.file.buffer;
   const name = req.body.name;
   const imageCrop = req.body.imageCrop;
-  let categoryId: number = parseInt(req.body.categoryId) 
-  categoryId = categoryId != 0 ? categoryId : null;  
+  let categoryId: number = parseInt(req.body.categoryId)
+  categoryId = categoryId != 0 ? categoryId : null;
   const base64Image = imageCrop.split(";base64,").pop();
   const imgCropBuffer = Buffer.from(base64Image, "base64");
   const getArtist = await artistDAO.getArtistById(artistId);
@@ -1040,6 +1040,54 @@ const createGroup = async (req: Request, res: Response) => {
     message: "Updated image",
   });
 };
+
+const updateArt = async (req: Request, res: Response) => {
+  const { artId, name, categoryId } = req.body;
+
+  if (!artId || !productService.artExist(artId)) {
+    res.status(404).json({ message: "Art does not exist" });
+    return;
+  }
+
+  const updatedArt = await prisma.group.update({
+    where: {
+      id: artId,
+    },
+    data: {
+      name: name,
+      categoryId: categoryId
+    }
+  });
+
+  if (!updatedArt) {
+    res.status(500).json({ message: "Cannot update art.. please contact Admin" })
+    return;
+  }
+
+  res.status(200).json({ message: "Art updated Successfully" })
+}
+
+const deleteArt = async (req: Request, res: Response) => {
+  const artId = parseInt(req.params.artId);
+
+  if (!artId || !productService.artExist(artId)) {
+    res.status(404).json({ message: "Art does not exist" });
+    return;
+  }
+
+  const artDeleted = await prisma.group.delete({
+    where: {
+      id: artId
+    }
+  });
+
+  if (!artDeleted) {
+    res.status(500).json({ message: "Cannot delete art.. please contact Admin" })
+    return;
+  }
+
+  res.status(200).json({ message: "Art deleted Successfully" })
+}
 
 const getGallery = async (req: Request, res: Response) => {
   const artistId = req.user.artistId;
@@ -1300,6 +1348,8 @@ const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
 const updateWithDecorators = withErrorHandlingDecorator(update);
 const deleteWithDecorators = withErrorHandlingDecorator(deleteProduct);
 const createGroupWithDecorators = withErrorHandlingDecorator(createGroup);
+const updateArtWithDecorators = withErrorHandlingDecorator(updateArt);
+const deleteArtWithDecorators = withErrorHandlingDecorator(deleteArt);
 const getGalleryWithDecorators = withErrorHandlingDecorator(getGallery);
 const getGroupRelationWithDecorators =
   withErrorHandlingDecorator(getGroupRelation);
@@ -1326,6 +1376,8 @@ export const productController = {
   update: updateWithDecorators,
   delete: deleteWithDecorators,
   createGroup: createGroupWithDecorators,
+  updateArt: updateArtWithDecorators,
+  deleteArt: deleteArtWithDecorators,
   getGallery: getGalleryWithDecorators,
   getGroupRelation: getGroupRelationWithDecorators,
   getGroupRelationByArtist: getGroupRelationByArtistWithDecorators,

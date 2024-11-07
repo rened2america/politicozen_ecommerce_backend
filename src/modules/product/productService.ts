@@ -138,6 +138,10 @@ class ProductService {
   generateRandomArt = async () => {
     await productDAO.generateRandomArt();
   }
+
+  artExist = async (artId: number) => {
+    return await productDAO.artExist(artId);
+  }
 }
 
 export default new ProductService();
