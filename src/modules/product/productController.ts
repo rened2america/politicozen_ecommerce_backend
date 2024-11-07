@@ -826,7 +826,8 @@ const createGroup = async (req: Request, res: Response) => {
   const bufferArt = req.file.buffer;
   const name = req.body.name;
   const imageCrop = req.body.imageCrop;
-  console.log("oki2", req.body.imageCrop);
+  let categoryId: number = parseInt(req.body.categoryId) 
+  categoryId = categoryId != 0 ? categoryId : null;  
   const base64Image = imageCrop.split(";base64,").pop();
   const imgCropBuffer = Buffer.from(base64Image, "base64");
   const getArtist = await artistDAO.getArtistById(artistId);
@@ -856,6 +857,7 @@ const createGroup = async (req: Request, res: Response) => {
     data: {
       artistId,
       urlImage: imgArtURL.Location,
+      categoryId,
       //@ts-ignore
       name,
     },

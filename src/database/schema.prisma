@@ -84,13 +84,10 @@ model Product {
   artistId Int
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
-  category Category? @relation(fields: [categoryId], references: [id])
-  categoryId Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([groupId])
   @@index([artistId])
-  @@index([categoryId])
 }
 
 model Tag {
@@ -119,7 +116,7 @@ model Type {
 model Category {
   id Int @id @default(autoincrement())
   value String @db.VarChar(100) @unique  
-  product Product[]
+  group Group[]
 }
 
 // --------- Product END
@@ -153,10 +150,13 @@ model Group {
   name String
   artist Artist @relation(fields:[artistId], references: [id] )
   artistId Int
+  category Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
   createdBy String @db.VarChar(500) @default("")            //Nuevo campo en la tabla de las Imagenes para determinar quien es el creador del Arte
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([artistId])
+  @@index([categoryId])
   RandomArtsHomepage RandomArtsHomepage[]
 }
 
