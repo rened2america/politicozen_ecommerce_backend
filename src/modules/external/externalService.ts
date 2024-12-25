@@ -32,6 +32,11 @@ class ExternalService {
 
         return uploadedImage;
     };
+
+    getAllRequests = async () => {
+        const requests = await externalDAO.getAllRequests();
+        return requests;
+    };
 }
 
 export default new ExternalService();

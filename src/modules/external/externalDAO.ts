@@ -28,17 +28,26 @@ class ExternalDAO {
 
   updateToken = async (tokenId: number, data: { token: string }) => {
     try {
-        const updatedToken = await prisma.tokens.update({
-            where: { id: tokenId },
-            data: { token: data.token }
-        });
-        return updatedToken;
+      const updatedToken = await prisma.tokens.update({
+        where: { id: tokenId },
+        data: { token: data.token }
+      });
+      return updatedToken;
     } catch (error) {
       console.log("localError", error);
       return error;
     }
-}
+  };
 
+  getAllRequests = async () => {
+    try {
+      const requests = await prisma.requests.findMany({});
+      return requests;
+    } catch (error) {
+      console.log("localError: ", error);
+      return error;
+    }
+  };
 }
 
 export default new ExternalDAO();

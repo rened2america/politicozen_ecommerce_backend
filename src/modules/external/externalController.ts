@@ -57,6 +57,45 @@ const generateToken = async (req: Request, res: Response) => {
   }
 };
 
+const getAllRequests = async (req: Request, res: Response) => {
+
+  const requests = await externalService.getAllRequests();
+
+  res.status(200).json(requests)
+};
+
+const getAllRequestsExternal = async (req: Request, res: Response) => {
+  
+  const token = req.header("Authorization");
+  if (!token){
+    res.status(404).json({
+      message: `Unauthorized: Token not valid`,
+    });
+    return;    
+  }
+  
+  // Gets Token from Database
+  const tokenData = await prisma.tokens.findUnique({
+    where: {
+      token: token,
+    },
+    include: {
+      artist: true,
+    },
+  });
+
+  if (!tokenData) {
+    res.status(404).json({
+      message: `Unauthorized: Token not valid`,
+    });
+    return;
+  }
+
+  const requests = await externalService.getAllRequests();
+
+  res.status(200).json(requests)
+};
+
 const uploadRequest = async (req: Request, res: Response) => {
   const token = req.header("Authorization");
   const s3 = connectionAws();
@@ -78,6 +117,7 @@ const uploadRequest = async (req: Request, res: Response) => {
         res.status(404).json({
           message: `Unauthorized: Token not valid`,
         });
+        return;
       }
 
       // Verificamos que los datos del body cumplan con las especificaciones del un producto ()
@@ -207,9 +247,13 @@ const getSales = async (req: Request, res: Response) => {
 const generateTokenWithDecorators = withErrorHandlingDecorator(generateToken);
 const uploadOrderWithDecorators = withErrorHandlingDecorator(uploadRequest);
 const getSalesWithDecorators = withErrorHandlingDecorator(getSales);
+const getAllRequestsWithDecorators = withErrorHandlingDecorator(getAllRequests);
+const getAllRequestsExternalWithDecorators = withErrorHandlingDecorator(getAllRequestsExternal);
 
 export const externalController = {
   generateToken: generateTokenWithDecorators,
   uploadRequest: uploadOrderWithDecorators,
   getSales: getSalesWithDecorators,
+  getAllRequests: getAllRequestsWithDecorators,
+  getAllRequestsExternal: getAllRequestsExternalWithDecorators,
 };
