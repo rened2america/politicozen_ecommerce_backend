@@ -42,24 +42,24 @@ export const validateRequestBody = (reqBody: any): string | null => {
     }
 
     // Validar genero
-    if (!Array.isArray(genders) || !genders.every((g: any) => typeof g === 'string')) {
-        return 'The genders field must be an array of strings.';
-    }
+    // if (!Array.isArray(genders) || !genders.every((g: any) => typeof g === 'string')) {
+    //     return 'The genders field must be an array of strings.';
+    // }
     // Verificar que todos los géneros estén incluidos en los géneros permitidos
-    const allowedGeneros = ['women', 'men', 'unisex', 'youth'];
-    if (!genders.every((g: string) => allowedGeneros.includes(g))) {
-        return 'Gender field contains values that are not allowed';
-    }
+    // const allowedGeneros = ['women', 'men', 'unisex', 'youth'];
+    // if (!genders.every((g: string) => allowedGeneros.includes(g))) {
+    //     return 'Gender field contains values that are not allowed';
+    // }
 
     // Validar sizes
-    if (!Array.isArray(sizes) || !sizes.every((s: any) => typeof s === 'string')) {
-        return 'Field sizes must be an array of strings';
-    }
-    // Verificar que todos los tamaños estén incluidos en los tamaños permitidos
-    const allowedSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
-    if (!sizes.every((s: string) => allowedSizes.includes(s))) {
-        return 'The sizes field contains values that are not allowed';
-    }
+    // if (!Array.isArray(sizes) || !sizes.every((s: any) => typeof s === 'string')) {
+    //     return 'Field sizes must be an array of strings';
+    // }
+    // // Verificar que todos los tamaños estén incluidos en los tamaños permitidos
+    // const allowedSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+    // if (!sizes.every((s: string) => allowedSizes.includes(s))) {
+    //     return 'The sizes field contains values that are not allowed';
+    // }
 
     return null;
 };
