@@ -243,9 +243,12 @@ const createAccount = async (req: Request, res: Response) => {
 
   const password = user.password;
   const passwordToSave = await authService.encryptPassword(password);
+  const loginToken = authService.secureRandomHex(16);
   const newUser = await authService.createUser({
     ...user,
     password: passwordToSave,
+    loginToken: loginToken,
+    loginUrl: `https://app.politicozen.com/${loginToken}/login`,
   });
 
   // const sendEmail = await authService.sendEmailConfirmation(newUser.email);

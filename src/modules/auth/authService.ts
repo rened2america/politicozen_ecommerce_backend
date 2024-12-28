@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import authDAO from "./authDAO";
 import bcrypt from "bcrypt";
 import sgMail from "@sendgrid/mail";
+import crypto from 'crypto'
 
 class AuthService {
   createUser = async (user: any) => {
@@ -19,6 +20,11 @@ class AuthService {
     const hashedPassword = await bcrypt.hash(password, salt);
     return hashedPassword;
   };
+
+  secureRandomHex = (bytes = 16) => {
+    return crypto.randomBytes(bytes).toString('hex');
+  }
+  
   isValidPassword = async (email: string, password: string) => {
     const user = await authDAO.getUserByEmail(email);
     if (!user) {
