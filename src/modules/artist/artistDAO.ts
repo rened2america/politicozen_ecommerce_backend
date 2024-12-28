@@ -12,6 +12,16 @@ class ArtistDAO {
     return artist;
   };
 
+  getArtistByLoginToken = async (loginToken: string): Promise<any | null> => {
+    const artist: any | null = await prisma.artist.findFirst({
+      where: {
+        loginToken,
+      },
+    });
+
+    return artist;
+  };
+
   getArtistById = async (id: number): Promise<any | null> => {
     const artist: any | null = await prisma.artist.findUnique({
       where: {

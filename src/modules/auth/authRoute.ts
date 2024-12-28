@@ -5,6 +5,7 @@ const routes = Router();
 
 routes
   .post("/login", authController.login)
+  .post("/loginUrl", authController.loginUrl)
   .get("/signout", authValidate, authController.signout)
   .post("/create", authController.createAccount)
   .get("/userIsLogin", authValidate, authController.userIsLogin);

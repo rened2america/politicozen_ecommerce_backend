@@ -9,6 +9,11 @@ class ArtistService {
     return artistExist;
   };
 
+  getArtistByLoginToken = async (loginToken: string): Promise<any | null> => {
+    const artistExist: any | null = await artistDAO.getArtistByLoginToken(loginToken);
+    return artistExist;
+  };
+
   artistPasswordIsValid = async (
     password: string,
     passwordFromDb: string
