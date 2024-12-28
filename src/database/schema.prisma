@@ -26,6 +26,8 @@ model Artist {
   bio String @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  loginToken String? @db.VarChar(300)
+  loginUrl   String? @db.VarChar(300)
   session Session?
   design Design[]
   product Product[]
