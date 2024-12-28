@@ -48,6 +48,16 @@ class ExternalDAO {
       return error;
     }
   };
+
+  deleteRequest = async (requestID: number) => {
+    try {
+      const deleted = await prisma.requests.delete({where: {id: requestID}});
+      return !!deleted;
+    } catch (error) {
+      console.log("localError: ", error);
+      return error;
+    }
+  };
 }
 
 export default new ExternalDAO();

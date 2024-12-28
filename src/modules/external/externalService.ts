@@ -36,6 +36,11 @@ class ExternalService {
     getAllRequests = async () => {
         const requests = await externalDAO.getAllRequests();
         return requests;
+    }
+
+    deleteRequest = async (requestID: number) => {
+        const deleted = await externalDAO.deleteRequest(requestID);
+        return deleted;
     };
 }
 

@@ -64,6 +64,19 @@ const getAllRequests = async (req: Request, res: Response) => {
   res.status(200).json(requests)
 };
 
+const deleteRequest = async (req: Request, res: Response) => {
+
+  const requestID = parseInt(req.params.requestID);
+  const deleted = await externalService.deleteRequest(requestID);
+
+  if (!deleted){
+    res.status(400).json({message: "Cannot delete this request!"})
+    return;
+  }
+  
+  res.status(200).json({message: "Request deleted successfully!"})
+};
+
 const getAllRequestsExternal = async (req: Request, res: Response) => {
   
   const token = req.header("Authorization");
@@ -248,6 +261,7 @@ const generateTokenWithDecorators = withErrorHandlingDecorator(generateToken);
 const uploadOrderWithDecorators = withErrorHandlingDecorator(uploadRequest);
 const getSalesWithDecorators = withErrorHandlingDecorator(getSales);
 const getAllRequestsWithDecorators = withErrorHandlingDecorator(getAllRequests);
+const deleteRequestWithDecorators = withErrorHandlingDecorator(deleteRequest);
 const getAllRequestsExternalWithDecorators = withErrorHandlingDecorator(getAllRequestsExternal);
 
 export const externalController = {
@@ -255,5 +269,6 @@ export const externalController = {
   uploadRequest: uploadOrderWithDecorators,
   getSales: getSalesWithDecorators,
   getAllRequests: getAllRequestsWithDecorators,
+  deleteRequest: deleteRequestWithDecorators,
   getAllRequestsExternal: getAllRequestsExternalWithDecorators,
 };

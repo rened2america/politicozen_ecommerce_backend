@@ -8,6 +8,7 @@ routes
   .post("/uploadRequest", externalController.uploadRequest)
   .get("/getSales", externalController.getSales)
   .get("/getAllRequests", authValidate, externalController.getAllRequests)
+  .delete("/deleteRequest/:requestID", authValidate, externalController.deleteRequest)
   .get("/getAllRequestsExternal", externalController.getAllRequestsExternal);
 
 export const externalRoute = routes;
