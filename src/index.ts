@@ -37,7 +37,12 @@ app.use(express.urlencoded({ limit: "50mb" }));
 app.use("/api/1", routes);
 const PORT = 4000;
 
-cron.schedule('0 0 */2 * *', productDAO.generateRandomArt);
+if (process.env.NODE_ENV === 'production') {
+  console.log('Running in production mode. Scheduling generateRandomArt cron job...');
+  cron.schedule('0 0 */2 * *', productDAO.generateRandomArt);
+} else {
+  console.log('Not in production mode, generateRandomArt cron job not scheduled.');
+}
 
 app.listen(PORT, () => {
   console.log("Server running on PORT: ", PORT);
