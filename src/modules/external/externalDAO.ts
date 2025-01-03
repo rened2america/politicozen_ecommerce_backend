@@ -61,8 +61,25 @@ class ExternalDAO {
 
   deleteRequest = async (requestID: number) => {
     try {
-      const deleted = await prisma.requests.delete({where: {id: requestID}});
+      const deleted = await prisma.requests.delete({ where: { id: requestID } });
       return !!deleted;
+    } catch (error) {
+      console.log("localError: ", error);
+      return error;
+    }
+  };
+
+  markRequestComplete = async (requestID: number) => {
+    try {
+      const updated = await prisma.requests.update({
+        where: {
+          id: requestID
+        },
+        data: {
+          isCreated: true
+        }
+      });
+      return !!updated;
     } catch (error) {
       console.log("localError: ", error);
       return error;
