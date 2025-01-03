@@ -8,7 +8,7 @@ const MINUTE_TO_HOUR = SECONDS_TO_MINUTE * 60;
 const HOUR_TO_DAY = MINUTE_TO_HOUR * 24;
 const DAY_TO_MONTH = HOUR_TO_DAY * 30;
 const DAY_TO_YEAR = DAY_TO_MONTH * 12;
-console.log(DAY_TO_YEAR);
+// console.log(DAY_TO_YEAR);
 class SessionService {
   getByArtistId = async (artistId: number): Promise<any | null> => {
     const session = await SessionDAO.getByArtistId(artistId);
@@ -24,9 +24,9 @@ class SessionService {
     if (!accessToken.code || !refreshToken.code) return false;
 
     const currentTime = new Date().getTime() / 1000;
-    console.log(refreshToken.exp);
+    // console.log(refreshToken.exp);
     const isValidRefreshToken = refreshToken.exp > currentTime;
-    console.log("isValidRefreshToken", isValidRefreshToken);
+    // console.log("isValidRefreshToken", isValidRefreshToken);
     if (!isValidRefreshToken) {
       return false;
     }

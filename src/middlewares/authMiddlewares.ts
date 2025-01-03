@@ -23,10 +23,8 @@ export const authValidate: any = async (
     // jwt.verify(accessToken, "emDgcBoq4Vv_w2ecS-Egz");
     const accessTokenDecode = jwt.decode(accessToken);
     const refreshTokenDecode = jwt.decode(refreshToken);
-    console.log(accessTokenDecode, refreshTokenDecode);
+    // console.log(accessTokenDecode, refreshTokenDecode);
 
-    console.log("String");
-    console.log();
     if (
       !accessTokenDecode ||
       typeof accessTokenDecode === "string" ||
@@ -36,7 +34,7 @@ export const authValidate: any = async (
       res.status(401).json({ message: "User not logged in" });
       return;
     }
-    console.log("after String");
+    // console.log("after String");
 
     const sessionIsValid = await sessionService.isValid(
       accessTokenDecode,
@@ -45,7 +43,7 @@ export const authValidate: any = async (
       refreshToken
     );
     if (sessionIsValid) {
-      console.log("sessionIsValid", sessionIsValid);
+      // console.log("sessionIsValid", sessionIsValid);
       const artist = await prisma.artist.findUnique({
         where: {
           id: sessionIsValid.artistId,

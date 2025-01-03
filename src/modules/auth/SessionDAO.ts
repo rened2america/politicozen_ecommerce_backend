@@ -4,7 +4,7 @@ import { CreateSession, SessionCreated } from "./authDTO";
 
 class SessionDAO {
   create = async (session: CreateSession): Promise<SessionCreated> => {
-    console.log("session", session);
+    // console.log("session", session);
     const sessionCreated = await prisma.session.create({
       data: {
         ...session,
@@ -33,7 +33,7 @@ class SessionDAO {
         refreshCode,
       },
     });
-    console.log(session);
+    // console.log(session);
     return session;
   };
 
