@@ -14,6 +14,16 @@ class ExternalDAO {
     }
   };
 
+  requestExist = async (requestID: any) => {
+    const request = await prisma.requests.findFirst({
+      where: {
+        id: requestID
+      }
+    });
+
+    return !!request;
+  }
+
   createToken = async (data: any) => {
     try {
       const newToken = await prisma.tokens.create({

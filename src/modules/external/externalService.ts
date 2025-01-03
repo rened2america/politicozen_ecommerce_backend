@@ -7,12 +7,17 @@ class ExternalService {
         return newRequest;
     };
 
+    requestExist = async (requestID: number) => {
+        const isRequest = await externalDAO.requestExist(requestID);
+        return isRequest;
+    }
+
     createToken = async (token: any) => {
         const newToken = await externalDAO.createToken(token);
         return newToken;
     };
 
-    updateToken = async (tokenId:number, token: any) => {
+    updateToken = async (tokenId: number, token: any) => {
         const newToken = await externalDAO.updateToken(tokenId, token);
         return newToken;
     };
@@ -24,7 +29,7 @@ class ExternalService {
     ) => {
         const paramsImg = {
             Bucket: process.env.BUCKET_IMG,
-            Key: `${Date.now().toString()}-${productName}-product`,
+            Key: `${Date.now().toString()}-${productName}-Art`,
             Body: imgBuffer,
             ContentType: "image/png", // Cambia esto según el tipo de imagen
         };

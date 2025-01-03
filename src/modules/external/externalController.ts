@@ -5,6 +5,7 @@ import { validateRequestBody } from "../../utils/validation";
 import { connectionAws } from "../../utils/configAws";
 import externalService from "./externalService";
 import jwt from "jsonwebtoken";
+import artistDAO from "../artist/artistDAO";
 
 const generateToken = async (req: Request, res: Response) => {
   try {
@@ -69,24 +70,24 @@ const deleteRequest = async (req: Request, res: Response) => {
   const requestID = parseInt(req.params.requestID);
   const deleted = await externalService.deleteRequest(requestID);
 
-  if (!deleted){
-    res.status(400).json({message: "Cannot delete this request!"})
+  if (!deleted) {
+    res.status(400).json({ message: "Cannot delete this request!" })
     return;
   }
-  
-  res.status(200).json({message: "Request deleted successfully!"})
+
+  res.status(200).json({ message: "Request deleted successfully!" })
 };
 
 const getAllRequestsExternal = async (req: Request, res: Response) => {
-  
+
   const token = req.header("Authorization");
-  if (!token){
+  if (!token) {
     res.status(404).json({
       message: `Unauthorized: Token not valid`,
     });
-    return;    
+    return;
   }
-  
+
   // Gets Token from Database
   const tokenData = await prisma.tokens.findUnique({
     where: {
@@ -110,6 +111,89 @@ const getAllRequestsExternal = async (req: Request, res: Response) => {
 };
 
 const uploadRequest = async (req: Request, res: Response) => {
+  const s3 = connectionAws();
+  let imageUrlLocation = "";
+  const artistId = req.user.artistId;
+
+  // const bufferArt = req.file.buffer;
+  const imageCrop = req.body.urlImage;
+  console.log("imgcrop: ", imageCrop)
+  if (!imageCrop || !imageCrop.includes(";base64,")) {
+    console.log("ERROR: Invalid base64 image")
+    res.status(400).json({ message: "Invalid base64 image" });
+    return;
+  }
+  if (!req.body.templates || typeof req.body.templates !== "string") {
+    console.log("ERROR: Invalid or missing templates")
+    res.status(400).json({ message: "Invalid or missing templates" });
+    return;
+  }
+  if (!req.body.colors || typeof req.body.colors !== "string") {
+    console.log("ERROR: Invalid or missing colors")
+    res.status(400).json({ message: "Invalid or missing colors" });
+    return;
+  }
+  const base64Image = imageCrop.split(";base64,").pop();
+  const imgCropBuffer = Buffer.from(base64Image, "base64");
+
+  const artist = await artistDAO.getArtistById(artistId);
+
+  req.body.templates = req.body.templates.includes(',')
+    ? req.body.templates.split(',')
+    : [req.body.templates];
+
+  req.body.colors = req.body.colors.includes(',')
+    ? req.body.colors.split(',')
+    : [req.body.colors];
+
+  try {
+
+    const validationError = validateRequestBody(req.body);
+
+    if (validationError) {
+      console.log("ERROR: ", validationError)
+      res.status(500).json({
+        message: `${validationError}`,
+      });
+      return;
+    }
+
+    const uploadedImage = await externalService.uploadOneImage(
+      imgCropBuffer,
+      `${req.body.artistName}-from-${artist.name}`,
+      s3
+    );
+
+    imageUrlLocation = uploadedImage.Location;
+
+    // Guardamos en la base de datos la solicitud
+    const newRequest = await externalService.createRequest({
+      urlImage: imageUrlLocation,
+      artistName: req.body.artistName,
+      templates: req.body.templates.join(','),
+      position: req.body.position,
+      color: req.body.colors.join(','),
+      genero: "",
+      sizes: ""
+
+    });
+
+    console.log("Success: Request created successfully!")
+    res.status(200).json({
+      message: "Request created successfully!",
+      urlLocation: imageUrlLocation,
+      request: newRequest,
+    });
+    return;
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong", error });
+    return;
+  }
+};
+
+const uploadRequestExternal = async (req: Request, res: Response) => {
   const token = req.header("Authorization");
   const s3 = connectionAws();
   let imageUrlLocation = "";
@@ -186,6 +270,98 @@ const uploadRequest = async (req: Request, res: Response) => {
   }
 };
 
+const updateRequest = async (req: Request, res: Response) => {
+
+  let { requestID, artistName, templates, position, colors } = req.body;
+
+  if (!requestID || !externalService.requestExist(requestID)) {
+    res.status(404).json({ message: "Request does not exist" });
+    return;
+  }
+
+
+  if (!templates || typeof templates !== "string") {
+    console.log("ERROR: Invalid or missing templates")
+    res.status(400).json({ message: "Invalid or missing templates" });
+    return;
+  }
+  if (!colors || typeof colors !== "string") {
+    console.log("ERROR: Invalid or missing colors")
+    res.status(400).json({ message: "Invalid or missing colors" });
+    return;
+  }
+
+  req.body.templates = templates.includes(',')
+    ? templates.split(',')
+    : [templates];
+
+  req.body.colors = colors.includes(',')
+    ? colors.split(',')
+    : [colors];
+
+  try {
+
+    const validationError = validateRequestBody(req.body);
+
+    if (validationError) {
+      console.log("ERROR: ", validationError)
+      res.status(500).json({
+        message: `${validationError}`,
+      });
+      return;
+    }
+
+    const updatedRequest = await prisma.requests.update({
+      where: {
+        id: requestID,
+      },
+      data: {
+        artistName: artistName,
+        templates: templates,
+        position: position,
+        color: colors,
+      }
+    });
+
+    console.log("Success: Request updated successfully!")
+    res.status(200).json({
+      message: "Request updated successfully!",
+      request: updatedRequest,
+    });
+    return;
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong", error });
+    return;
+  }
+};
+
+// const updateRequest = async (req: Request, res: Response) => {
+//   const { requestID, artistName,templates, categoryId } = req.body;
+
+//   if (!requestID || !externalService.requestExist(requestID)) {
+//     res.status(404).json({ message: "Request does not exist" });
+//     return;
+//   }
+
+//   const updatedRequest = await prisma.requests.update({
+//     where: {
+//       id: requestID,
+//     },
+//     data: {
+//       artistName: artistName,      
+//     }
+//   });
+
+//   if (!updatedRequest) {
+//     res.status(500).json({ message: "Cannot update request.. please contact Admin" })
+//     return;
+//   }
+
+//   res.status(200).json({ message: "Request updated Successfully" })
+// };
+
 const getSales = async (req: Request, res: Response) => {
   const token = req.header("Authorization");
   console.log(token);
@@ -259,6 +435,8 @@ const getSales = async (req: Request, res: Response) => {
 
 const generateTokenWithDecorators = withErrorHandlingDecorator(generateToken);
 const uploadOrderWithDecorators = withErrorHandlingDecorator(uploadRequest);
+const uploadRequestExternalWithDecorators = withErrorHandlingDecorator(uploadRequestExternal);
+const updateRequestWithDecorators = withErrorHandlingDecorator(updateRequest);
 const getSalesWithDecorators = withErrorHandlingDecorator(getSales);
 const getAllRequestsWithDecorators = withErrorHandlingDecorator(getAllRequests);
 const deleteRequestWithDecorators = withErrorHandlingDecorator(deleteRequest);
@@ -267,6 +445,8 @@ const getAllRequestsExternalWithDecorators = withErrorHandlingDecorator(getAllRe
 export const externalController = {
   generateToken: generateTokenWithDecorators,
   uploadRequest: uploadOrderWithDecorators,
+  uploadRequestExternal: uploadRequestExternalWithDecorators,
+  updateRequest: updateRequestWithDecorators,
   getSales: getSalesWithDecorators,
   getAllRequests: getAllRequestsWithDecorators,
   deleteRequest: deleteRequestWithDecorators,

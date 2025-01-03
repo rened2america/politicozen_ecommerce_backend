@@ -5,7 +5,9 @@ import { authValidate } from "../../middlewares/authMiddlewares";
 const routes = Router();
 routes
   .get("/generateToken", authValidate, externalController.generateToken)
-  .post("/uploadRequest", externalController.uploadRequest)
+  .post("/uploadRequest", authValidate, externalController.uploadRequest)
+  .post("/uploadRequestExternal", externalController.uploadRequestExternal)
+  .put("/updateRequest", authValidate, externalController.updateRequest)
   .get("/getSales", externalController.getSales)
   .get("/getAllRequests", authValidate, externalController.getAllRequests)
   .delete("/deleteRequest/:requestID", authValidate, externalController.deleteRequest)

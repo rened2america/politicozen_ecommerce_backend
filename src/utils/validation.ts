@@ -36,7 +36,7 @@ export const validateRequestBody = (reqBody: any): string | null => {
         return 'Color field must be an array of strings';
     }
     // Verificar que todos los colores estén incluidos en los colores permitidos
-    const allowedColors = ['white', 'beige', 'red', 'royal blue', 'black'];
+    const allowedColors = ['white', 'beige', 'red', 'blue', 'black'];
     if (!colors.every((c: string) => allowedColors.includes(c))) {
         return 'The color field contains values that are not allowed';
     }
