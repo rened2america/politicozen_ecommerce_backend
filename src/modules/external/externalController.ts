@@ -152,7 +152,7 @@ const uploadRequest = async (req: Request, res: Response) => {
 
     if (validationError) {
       console.log("ERROR: ", validationError)
-      res.status(500).json({
+      res.status(400).json({
         message: `${validationError}`,
       });
       return;

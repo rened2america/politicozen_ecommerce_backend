@@ -10,6 +10,10 @@ export const validateRequestBody = (reqBody: any): string | null => {
     if (typeof artistName !== 'string') {
         return 'The artistName field must be a string';
     }
+    
+    if (artistName == ""){
+        return "Artist name is required"
+    }
 
     // Validar templates
     if (!Array.isArray(templates) || !templates.every((template: any) => typeof template === 'string')) {
