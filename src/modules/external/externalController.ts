@@ -272,7 +272,7 @@ const uploadRequestExternal = async (req: Request, res: Response) => {
 
 const updateRequest = async (req: Request, res: Response) => {
 
-  let { requestID, artistName, templates, position, colors } = req.body;
+  let { requestID, artistName, templates, position, colors, isCreated } = req.body;
 
   if (!requestID || !externalService.requestExist(requestID)) {
     res.status(404).json({ message: "Request does not exist" });
@@ -291,6 +291,12 @@ const updateRequest = async (req: Request, res: Response) => {
     return;
   }
 
+  if (typeof isCreated !== "boolean") {
+    console.log("ERROR: Invalid or missing isCreated")
+    res.status(400).json({ message: "Invalid or missing Created" });
+    return;
+  }
+
   req.body.templates = templates.includes(',')
     ? templates.split(',')
     : [templates];
@@ -305,7 +311,7 @@ const updateRequest = async (req: Request, res: Response) => {
 
     if (validationError) {
       console.log("ERROR: ", validationError)
-      res.status(500).json({
+      res.status(400).json({
         message: `${validationError}`,
       });
       return;
@@ -320,6 +326,7 @@ const updateRequest = async (req: Request, res: Response) => {
         templates: templates,
         position: position,
         color: colors,
+        isCreated: isCreated,
       }
     });
 
