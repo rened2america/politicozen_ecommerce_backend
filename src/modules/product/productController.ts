@@ -11,6 +11,7 @@ import { connectionAws } from "../../utils/configAws";
 import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
 import artistDAO from "../artist/artistDAO";
+import externalDAO from "../external/externalDAO";
 const create = async (req: Request, res: Response) => {
   const { x, y, angle, scale, tags, type, groupId } = req.body;
   console.log("Distance x", x);
@@ -1041,6 +1042,219 @@ const createGroup = async (req: Request, res: Response) => {
   });
 };
 
+const createGroupFromRequest = async (req: Request, res: Response) => {
+  const artistId = req.user.artistId;
+  const { name, requestID } = req.body
+  let categoryId: number = parseInt(req.body.categoryId)
+
+  categoryId = categoryId != 0 ? categoryId : null;
+  if (!categoryId) {
+    res.status(400).json({ message: "Invalid category" });
+    return;
+  }
+
+  if (!name || typeof name !== 'string') {
+    res.status(400).json({ message: "Invalid name" });
+    return;
+  }
+
+  const request = await externalDAO.getRequestByID(requestID);
+  if (!request) {
+    res.status(400).json({ message: "Invalid requestID" });
+    return;
+  }
+
+  const stripe = connectionStripe();
+
+  const newGroup = await prisma.group.create({
+    data: {
+      artistId,
+      urlImage: request.urlImage,
+      categoryId,
+      //@ts-ignore
+      name,
+    },
+  });
+
+  // Create Price of stripe
+  const newOfProductPosterSmall = await stripe.products.create({
+    name: `${name}-Poster-17x25.5-product`,
+    images: [request.urlImage],
+  });
+  const newOfProductPosterLarge = await stripe.products.create({
+    name: `${name}-Poster-24x36-product`,
+    images: [request.urlImage],
+  });
+  const newOfProductCanvas = await stripe.products.create({
+    name: `${name}-Canvas-11x14-product`,
+    images: [request.urlImage],
+  });
+  const newOfProductCanvas2 = await stripe.products.create({
+    name: `${name}-Canvas-20x30-product`,
+    images: [request.urlImage],
+  });
+
+  const priceProductPosterSmall = await stripe.prices.create({
+    product: newOfProductPosterSmall.id,
+    currency: "usd",
+    unit_amount: 25.99 * 100,
+  });
+  const priceProductPosterLarge = await stripe.prices.create({
+    product: newOfProductPosterLarge.id,
+    currency: "usd",
+    unit_amount: 39.99 * 100,
+  });
+  const priceProductCanvas = await stripe.prices.create({
+    product: newOfProductCanvas.id,
+    currency: "usd",
+    unit_amount: 49.95 * 100,
+  });
+
+  const priceProduct = await stripe.prices.create({
+    product: newOfProductCanvas2.id,
+    currency: "usd",
+    unit_amount: 99.99 * 100,
+  });
+
+  const newProductPoster = await productService.create({
+    price: 25.99,
+    title: name,
+    subtitle: "",
+    description: "",
+    artistId: artistId,
+    idGeneral: generateCode(),
+    groupId: newGroup.id,
+    // tag: {
+    //   connectOrCreate: tagOperations,
+    // },
+    types: {
+      connectOrCreate: {
+        where: { value: "Poster" },
+        create: { value: "Poster" },
+      },
+    },
+    sizes: {
+      connectOrCreate: [
+        {
+          where: { value: `17"x25.5"` },
+          create: { value: `17"x25.5"` },
+        },
+        {
+          where: { value: `24"x36"` },
+          create: { value: `24"x36"` },
+        },
+      ],
+    },
+  });
+  const newProductCanvas = await productService.create({
+    price: 49.95,
+    title: name,
+    subtitle: "",
+    description: "",
+    artistId: artistId,
+    idGeneral: generateCode(),
+    groupId: newGroup.id,
+    // tag: {
+    //   connectOrCreate: tagOperations,
+    // },
+    types: {
+      connectOrCreate: {
+        where: { value: "Canvas" },
+        create: { value: "Canvas" },
+      },
+    },
+    sizes: {
+      connectOrCreate: [
+        {
+          where: { value: `11"x14"` },
+          create: { value: `11"x14"` },
+        },
+        {
+          where: { value: `20"x30"` },
+          create: { value: `20"x30"` },
+        },
+      ],
+    },
+  });
+
+  const createDesignPosterSmall = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductPoster.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 25.99,
+      priceId: priceProductPosterSmall.id,
+      url: request.urlImage,
+      urlLogo: request.urlImage,
+      artistId: artistId,
+      size: `17"x25.5"`,
+    },
+  });
+
+  const createDesignPosterLarge = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductPoster.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 39.99,
+      priceId: priceProductPosterLarge.id,
+      url: request.urlImage,
+      urlLogo: request.urlImage,
+      artistId: artistId,
+      size: `24"x36"`,
+    },
+  });
+
+  const createDesignCanvas1 = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductCanvas.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 49.95,
+      priceId: priceProductCanvas.id,
+      url: request.urlImage,
+      urlLogo: request.urlImage,
+      artistId: artistId,
+      size: `11"x14"`,
+    },
+  });
+
+  const createDesignCanvas2 = await prisma.design.create({
+    //@ts-ignore
+    data: {
+      //@ts-ignore
+      productId: newProductCanvas.id,
+      positionX: 0,
+      positionY: 0,
+      angle: 0,
+      scale: 0,
+      price: 99.99,
+      priceId: priceProduct.id,
+      url: request.urlImage,
+      urlLogo: request.urlImage,
+      artistId: artistId,
+      size: `20"x30"`,
+    },
+  });
+
+  res.status(200).json({
+    message: "Art, Poster and Canvas generated successfully!",
+  });
+  return;
+};
+
 const updateArt = async (req: Request, res: Response) => {
   const { artId, name, categoryId } = req.body;
 
@@ -1348,6 +1562,7 @@ const getOrdersWithDecorators = withErrorHandlingDecorator(getOrders);
 const updateWithDecorators = withErrorHandlingDecorator(update);
 const deleteWithDecorators = withErrorHandlingDecorator(deleteProduct);
 const createGroupWithDecorators = withErrorHandlingDecorator(createGroup);
+const createGroupFromRequestWithDecorators = withErrorHandlingDecorator(createGroupFromRequest);
 const updateArtWithDecorators = withErrorHandlingDecorator(updateArt);
 const deleteArtWithDecorators = withErrorHandlingDecorator(deleteArt);
 const getGalleryWithDecorators = withErrorHandlingDecorator(getGallery);
@@ -1376,6 +1591,7 @@ export const productController = {
   update: updateWithDecorators,
   delete: deleteWithDecorators,
   createGroup: createGroupWithDecorators,
+  createGroupFromRequest: createGroupFromRequestWithDecorators,
   updateArt: updateArtWithDecorators,
   deleteArt: deleteArtWithDecorators,
   getGallery: getGalleryWithDecorators,

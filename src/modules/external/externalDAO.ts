@@ -59,6 +59,18 @@ class ExternalDAO {
     }
   };
 
+  getRequestByID = async (requestID: number) => {
+    try {
+      const request = await prisma.requests.findFirst({
+        where: { id: requestID }
+      });
+      return request;
+    } catch (error) {
+      console.log("Error in RequestByID: ", error);
+      return error;
+    }
+  };
+
   deleteRequest = async (requestID: number) => {
     try {
       const deleted = await prisma.requests.delete({ where: { id: requestID } });

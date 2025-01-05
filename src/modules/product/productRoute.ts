@@ -32,6 +32,11 @@ routes
     upload.single("art"),
     productController.createGroup
   )
+  .post(
+    "/createGroupFromRequest",
+    authValidate,
+    productController.createGroupFromRequest
+  )
   .put("/updateArt", authValidate, productController.updateArt)
   .delete("/art/:artId", authValidate, productController.deleteArt)
   .get("/gallery", authValidate, productController.getGallery)
