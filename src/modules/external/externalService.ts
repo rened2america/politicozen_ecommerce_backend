@@ -31,7 +31,7 @@ class ExternalService {
             Bucket: process.env.BUCKET_IMG,
             Key: `${Date.now().toString()}-${productName}-Art`,
             Body: imgBuffer,
-            ContentType: "image/png", // Cambia esto según el tipo de imagen
+            ContentType: "image/webp", // Cambia esto según el tipo de imagen
         };
         const uploadedImage = await s3.upload(paramsImg).promise();
 

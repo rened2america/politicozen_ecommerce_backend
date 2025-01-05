@@ -26,7 +26,7 @@ class ProductService {
       Bucket: process.env.BUCKET_IMG,
       Key: `${Date.now().toString()}-${productName}-logo`,
       Body: Buffer.from(logo, "base64"),
-      ContentType: "image/png", // Cambia esto según el tipo de imagen
+      ContentType: "image/webp", // Cambia esto según el tipo de imagen
     };
     const imgLogoURL = await s3.upload(paramsImgLogo).promise();
     return imgLogoURL.Location;
@@ -42,7 +42,7 @@ class ProductService {
         Bucket: process.env.BUCKET_IMG,
         Key: `${Date.now().toString()}-${productName}-product-${image.color}`,
         Body: image.imgBuffer,
-        ContentType: "image/png", // Cambia esto según el tipo de imagen
+        ContentType: "image/webp", // Cambia esto según el tipo de imagen
       };
       const imgProductURL = await s3.upload(paramsImg).promise();
       return {

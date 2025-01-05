@@ -840,7 +840,7 @@ const createGroup = async (req: Request, res: Response) => {
     //@ts-ignore
     Key: `${Date.now().toString()}-${getArtist.name}-Poster`,
     Body: imgCropBuffer,
-    ContentType: "image/png",
+    ContentType: "image/webp",
   };
   //@ts-ignore
   const imgCropURL = await s3.upload(paramsImgCrop).promise();
@@ -849,7 +849,7 @@ const createGroup = async (req: Request, res: Response) => {
     //@ts-ignore
     Key: `${Date.now().toString()}-${getArtist.name}-Art`,
     Body: bufferArt,
-    ContentType: "image/png",
+    ContentType: "image/webp",
   };
   //@ts-ignore
   const imgArtURL = await s3.upload(paramsImgArt).promise();
