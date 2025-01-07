@@ -44,6 +44,7 @@ const create = async (req: Request, res: Response) => {
     if (typeValue === "Mug") {
       return 24.99;
     }
+    throw new Error(`Unknown product type: ${typeValue}`);
   };
 
   const sizeofProdut = (typeValue: string) => {
