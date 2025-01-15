@@ -140,6 +140,10 @@ const create = async (req: Request, res: Response) => {
           where: { value: "White" },
           create: { value: "White" },
         },
+        {
+          where: { value: "Black" },
+          create: { value: "Black" },
+        },
       ];
     }
 
@@ -169,8 +173,8 @@ const create = async (req: Request, res: Response) => {
     images: any,
     selected: any
   ) => {
-    if (typeValue === "Mug") {
-      return { white: images.white };
+    if (!selected.white) {
+      delete images.white;
     }
     if (!selected.beige) {
       delete images.beige;
