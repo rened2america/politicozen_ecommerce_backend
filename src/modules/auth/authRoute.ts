@@ -8,7 +8,9 @@ routes
   .post("/loginUrl", authController.loginUrl)
   .get("/signout", authValidate, authController.signout)
   .post("/create", authController.createAccount)
-  .get("/userIsLogin", authValidate, authController.userIsLogin);
+  .get("/userIsLogin", authValidate, authController.userIsLogin)
+  .post('/requestPasswordReset', authController.requestPasswordReset)
+  .post('/resetPassword', authController.resetPassword);
 // .get("/sendMailTest", authController.sendEmailTest);
 
 export const authRoute = routes;

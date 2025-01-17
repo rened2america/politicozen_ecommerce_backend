@@ -10,6 +10,7 @@ import artistService from "../artist/artistService";
 import sessionService from "./sessionService";
 import { generateCode } from "../../utils/generateCode";
 import authService from "./authService";
+import artistDAO from "../artist/artistDAO";
 const login = async (req: Request, res: Response) => {
   console.log(req.body.email, req.body.password);
 
@@ -278,6 +279,63 @@ const sendEmailTest = async (req: Request, res: Response) => {
   });
 };
 
+const requestPasswordReset = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const user = await artistService.getArtistByEmail(email);
+    if (!user){
+      res.status(404).json({ message: "User doesn't exist" });
+      return;
+    }      
+
+    const secret = process.env.JWT + user.password;
+    const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
+
+    const resetURL = `${process.env.URL_DASHBOARD}/reset-password?email=${user.email}&token=${token}`;
+    console.log("Here is the reset url", resetURL)
+    const sentEmail = await authService.sendPasswordResetEmail(email, resetURL);    
+    if(sentEmail){
+      res.status(200).json({ message: 'Password reset link sent' });
+      return;
+    }else{
+      res.status(500).json({ message: 'Something went wrong. Please contact support if this issue persists' });
+      return;
+    }
+  } catch (error) {
+    console.log("error: ", error)
+    res.status(500).json({ message: 'Something went wrong. Please contact support if this issue persists' });
+    return;
+  }
+};
+
+const resetPassword = async (req: Request, res: Response) => {  
+  const { email, password, token  } = req.body;
+
+  try {
+    const user = await artistService.getArtistByEmail(email);
+    if (!user) {
+      res.status(400).json({ message: "User not exists!" });
+      return;
+    }
+
+    const secret = process.env.JWT + user.password;
+
+    const verify = jwt.verify(token, secret);
+
+    const encryptedPassword = await authService.encryptPassword(password);
+             
+    await artistDAO.updateArtist(user.id, { password: encryptedPassword });      
+
+    res.status(200).json({ message: 'Password has been reset' });
+    return;
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Something went wrong' });
+    return;
+  }  
+};
+
 const loginWithDecorators = withErrorHandlingDecorator(login);
 const loginUrlWithDecorators = withErrorHandlingDecorator(loginUrl);
 
@@ -285,6 +343,8 @@ const signoutWithDecorators = withErrorHandlingDecorator(signout);
 const createAccountWithDecorators = withErrorHandlingDecorator(createAccount);
 const userIsLoginWithDecorators = withErrorHandlingDecorator(userIsLogin);
 const sendEmailTestWithDecorators = withErrorHandlingDecorator(sendEmailTest);
+const requestPasswordResetWithDecorators = withErrorHandlingDecorator(requestPasswordReset);
+const resetPasswordWithDecorators = withErrorHandlingDecorator(resetPassword);
 
 export const authController = {
   login: loginWithDecorators,
@@ -293,4 +353,6 @@ export const authController = {
   createAccount: createAccountWithDecorators,
   userIsLogin: userIsLoginWithDecorators,
   sendEmailTest: sendEmailTestWithDecorators,
+  requestPasswordReset: requestPasswordResetWithDecorators,
+  resetPassword: resetPasswordWithDecorators,
 };
