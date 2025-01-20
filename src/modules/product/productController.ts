@@ -14,15 +14,11 @@ import artistDAO from "../artist/artistDAO";
 import externalDAO from "../external/externalDAO";
 const create = async (req: Request, res: Response) => {
   const { x, y, angle, scale, tags, type, groupId } = req.body;
-  console.log("Distance x", x);
-  console.log("Distance y", y);
   const xDecimal = round(x, 6);
   const yDecimal = round(y, 6);
   const angleDecimal = round(angle, 6);
   const scaleDecimal = round(scale, 6);
 
-  console.log("Distance rounded x", xDecimal);
-  console.log("Distance rounded y", yDecimal);
   const productName = req.body.name;
   const productPrice = req.body.price;
   const productSubtitle = req.body.subtitle;
@@ -151,17 +147,15 @@ const create = async (req: Request, res: Response) => {
     const colorsToReturn = [];
 
     // Iterar sobre los colores en 'selected'
-    for (const color in selected) {
+    for (const colorKey in selected) {
       // Verificar si el color está seleccionado
-      if (selected[color]) {
-        // Convertir la clave de 'selected' a formato de texto capitalizado
-        const colorCapitalized = color.charAt(0).toUpperCase() + color.slice(1);
-
-        // Agregar el color al array
-        colorsToReturn.push({
-          where: { value: colorCapitalized },
-          create: { value: colorCapitalized },
-        });
+      if (selected[colorKey]) {
+            // New approach: store everything in lowercase (and optionally replace spaces):
+            const colorNormalized = colorKey.toLowerCase();             
+            colorsToReturn.push({
+              where: { value: colorNormalized },
+              create: { value: colorNormalized },
+            });
       }
     }
 
@@ -226,6 +220,7 @@ const create = async (req: Request, res: Response) => {
   }));
 
   const artistId = req.user.artistId;
+  console.log("createdetails start")
   console.log("priceOfProduct(type)", priceOfProduct(type));
   console.log("productName", productName);
   console.log("productSubtitle", productSubtitle);
@@ -236,6 +231,7 @@ const create = async (req: Request, res: Response) => {
   console.log("types", type);
   console.log("sizeofProdut", sizeofProdut(type));
   console.log("colorsofProdut", colorsofProdut(type, req.body.colorsSelected));
+  console.log("createdetails end")
 
   const newProduct = await productService.create({
     price: productPrice,
@@ -302,15 +298,32 @@ const getByUser = async (req: Request, res: Response) => {
     Sweatshirt: "SWA",
     Hoodie: "HOA",
     Mug: "MUG",
-    Shirt: "TSA",
+    "T-Shirt": "TSA",
   };
 
-  const color = {
+  const colorMap = {
     white: "1W",
     black: "1B",
     red: "1R",
     blue: "1C",
     beige: "4Y",
+    "Sport Grey": "4G",     
+    Navy: "1N",            
+    "Military Green": "2M",
+    Gold: "4D",            
+    "Cardinal Red": "2C",  
+    "Light Blue": "3B",    
+    "Dark Heather": "4H",  
+    Orange: "1O",          
+    "Light Pink": "3P",    
+    Sand: "4S",            
+    "Indigo Blue": "2I",   
+    "Heather Scarlet Red": "3H", 
+    Ash: "4A",             
+    Purple: "2U",          
+    "Graphite Heather": "4T", 
+    "Safety Green": "2S",  
+    "Forest Green": "2F",  
   };
 
   const size = {
@@ -343,19 +356,19 @@ const getByUser = async (req: Request, res: Response) => {
           },
         },
       });
-      console.log(design);
+      // console.log(design);
       const typeProduct = type[design.product.types[0].value];
       const colorProduct =
         typeProduct === "SPP"
           ? "73"
-          : color[design.variant]
-            ? color[design.variant]
+          : colorMap[design.variant]
+            ? colorMap[design.variant]
             : "1W";
       const sizeProduct = size[`S${design.size.replace(/[".]/g, "")}`];
       const sku = `PZ${design.id
         .toString()
         .padStart(8, "0")}UN${typeProduct}${colorProduct}${sizeProduct}`;
-      console.log(sku);
+      // console.log(sku);
       return {
         ...product,
         productId: sku,
@@ -731,7 +744,6 @@ const getOrders = async (req: Request, res: Response) => {
   );
   let normalizeOrders = [];
   const daysOfMonth = lastDayOfLastMonth.getDate();
-  console.log(daysOfMonth);
 
   for (let i = 1; i <= daysOfMonth; i++) {
     const date = new Date();
