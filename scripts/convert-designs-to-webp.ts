@@ -79,9 +79,11 @@ async function fetchUrlBuffer(url: string, redirects = 3): Promise<Buffer> {
         return reject(Object.assign(new Error(`HTTP ${statusCode} for ${url}`), { statusCode }));
       }
 
-      const chunks: Buffer[] = [];
-      res.on('data', (c) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
+      const chunks: Uint8Array[] = [];
+      res.on('data', (c: Buffer | Uint8Array) => {
+        chunks.push(Buffer.isBuffer(c) ? new Uint8Array(c) : c);
+      });
+      res.on('end', () => resolve(Buffer.concat(chunks as readonly Uint8Array[])));
     });
     req.on('error', reject);
   });
