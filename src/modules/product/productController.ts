@@ -1409,6 +1409,7 @@ const getCategories = async (req: Request, res: Response) => {
           group: {
             select: {
               urlImage: true,
+              urlImageWebp: true
             },
           },
         },
