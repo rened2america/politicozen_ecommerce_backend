@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "build": "tsc",
     "tsc": "tsc",
+    "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1",
     "convert:webp": "ts-node ./scripts/convert-designs-to-webp.ts --onlyMissing",
     "convert:webp:artist": "tsx ./scripts/convert-designs-to-webp.ts --onlyMissing"
