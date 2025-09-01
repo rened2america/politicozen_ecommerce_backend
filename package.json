@@ -37,6 +37,7 @@
     "nanoid": "^3.3.4",
     "node-cron": "^3.0.3",
     "node-jose": "^2.2.0",
+    "node-mailjet": "^6.0.9",
     "p-limit": "^6.2.0",
     "prisma": "^5.1.1",
     "sharp": "^0.34.3",
