@@ -299,7 +299,7 @@ const requestPasswordReset = async (req: Request, res: Response) => {
       res.status(200).json({ message: 'Password reset link sent' });
       return;
     }else{
-      res.status(500).json({ message: 'Something went wrong. Please contact support if this issue persists' });
+      res.status(500).json({ message: 'Caught: Something went wrong. Please contact support if this issue persists' });
       return;
     }
   } catch (error) {
