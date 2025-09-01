@@ -11,7 +11,7 @@ import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
 import artistDAO from "../artist/artistDAO";
 import externalDAO from "../external/externalDAO";
-const isJson = (str: string) => {
+const isItJson = (str: string) => {
   try {
     JSON.parse(str);
   } catch (e) {
@@ -393,7 +393,7 @@ const getAll = async (req: Request, res: Response) => {
   const page = req.query.page ? parseInt(req.query.page) : 1;
   const limit = 12;
   //@ts-ignore
-  if (isJson(filter)) {
+  if (isItJson(filter)) {
     //@ts-ignore
 
     const filterParse = JSON.parse(filter);
