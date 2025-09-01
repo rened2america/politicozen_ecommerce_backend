@@ -5,13 +5,20 @@ import productService from "./productService";
 // import { Upload } from "@aws-sdk/lib-storage"; borrar
 // import { S3Client } from "@aws-sdk/client-s3"; borrar
 import { prisma } from "../../database/initialConfig";
-import { isJson } from "../../utils/isJson";
 import { connectionStripe } from "../../utils/configStripe";
 import { connectionAws } from "../../utils/configAws";
 import { round } from "mathjs";
 import { generateCode } from "../../utils/generateCode";
 import artistDAO from "../artist/artistDAO";
 import externalDAO from "../external/externalDAO";
+const isJson = (str: string) => {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+};
 const create = async (req: Request, res: Response) => {
   const { x, y, angle, scale, tags, type, groupId } = req.body;
   const xDecimal = round(x, 6);
