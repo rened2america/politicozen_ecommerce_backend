@@ -40,7 +40,6 @@ function makeWebpKeyFromUrl(sourceUrl: string): { bucket: string; key: string } 
   try {
     const u = new URL(sourceUrl);
     const host = u.hostname.toLowerCase();
-    // keep '+' as literal; decode %xx sequences
     const pathKey = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
 
     const m = host.match(/^([^.]+)\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com$/i);
@@ -101,15 +100,13 @@ async function uploadWebpNextToSource(sourceUrl: string, webpBuf: Buffer): Promi
     Body: webpBuf,
     ContentType: 'image/webp',
     CacheControl: 'public, max-age=31536000, immutable',
-    ...(PUBLIC_READ ? { ACL: 'public-read' as any } : {}), // optional
+    ...(PUBLIC_READ ? { ACL: 'public-read' as any } : {}),
   };
 
   const out: any = await (s3 as any).upload(params).promise();
-  // out.Location is the exact, working URL (region-correct)
   return out?.Location || null;
 }
 
-// main converter: source = URL, upload = S3.upload, return Location
 async function convertUrlToWebp(url: string, opts: sharp.WebpOptions): Promise<string | null> {
   if (isWebpUrl(url)) {
     console.log(`no-convert: already .webp → ${url}`);
@@ -125,8 +122,6 @@ async function convertUrlToWebp(url: string, opts: sharp.WebpOptions): Promise<s
   }
 
   const meta = await sharp(buf).metadata();
-
-  // if the bytes are already webp, just re-upload them with `.webp` key (no recompression)
   const outBuf =
     meta.format === 'webp'
       ? buf
@@ -146,6 +141,11 @@ async function convertUrlToWebp(url: string, opts: sharp.WebpOptions): Promise<s
 
 let designUpdated = 0;
 let groupUpdated = 0;
+let designLogoPropagated = 0;
+
+const isMissing = (field: 'urlWebp' | 'urlLogoWebp' | 'urlImageWebp') => ({
+  OR: [{ [field]: null as any }, { [field]: '' as any }],
+});
 
 async function processDesign(d: Design) {
   const updates: Partial<Design> = {};
@@ -157,7 +157,7 @@ async function processDesign(d: Design) {
     logSkip('Design', d.id, 'main: urlWebp already set');
   } else {
     if (isWebpUrl(d.url)) {
-      updates.urlWebp = d.url; // already webp, just store it
+      updates.urlWebp = d.url;
       console.log(`Design ${d.id}: main already .webp (saved without converting)`);
     } else {
       const url = await convertUrlToWebp(d.url, { quality: WEBP_QUALITY, effort: 4 });
@@ -166,7 +166,7 @@ async function processDesign(d: Design) {
     }
   }
 
-  // logo / overlay
+  // logo / overlay — after group propagation, only convert if still missing
   if (isEmpty(d.urlLogo)) {
     logSkip('Design', d.id, 'logo: empty url');
   } else if (d.urlLogoWebp) {
@@ -198,32 +198,46 @@ async function processGroup(g: Group) {
     logSkip('Group', g.id, 'image: empty url');
     return;
   }
-  if (g.urlImageWebp) {
-    logSkip('Group', g.id, 'image: urlImageWebp already set');
-    return;
-  }
 
-  if (isWebpUrl(g.urlImage)) {
+  // Ensure group has urlImageWebp (convert if needed)
+  let imageWebp = g.urlImageWebp || null;
+
+  if (imageWebp) {
+    logSkip('Group', g.id, 'image: urlImageWebp already set');
+  } else if (isWebpUrl(g.urlImage)) {
     await prisma.group.update({ where: { id: g.id }, data: { urlImageWebp: g.urlImage } });
+    imageWebp = g.urlImage;
     groupUpdated++;
     console.log(`Group ${g.id}: image already .webp (saved without converting)`);
-    return;
+  } else {
+    const url = await convertUrlToWebp(g.urlImage, { quality: WEBP_QUALITY, effort: 4 });
+    if (!url) {
+      logSkip('Group', g.id, 'image: fetch/upload failed');
+      return;
+    }
+    await prisma.group.update({ where: { id: g.id }, data: { urlImageWebp: url } });
+    imageWebp = url;
+    groupUpdated++;
+    console.log(`Group ${g.id}: converted`);
   }
 
-  const url = await convertUrlToWebp(g.urlImage, { quality: WEBP_QUALITY, effort: 4 });
-  if (!url) {
-    logSkip('Group', g.id, 'image: fetch/upload failed');
-    return;
+  // Propagate to designs in this group:
+  // Set Design.urlLogoWebp = Group.urlImageWebp for designs whose urlLogo equals the group's urlImage and urlLogoWebp is missing
+  if (imageWebp) {
+    const assign = await prisma.design.updateMany({
+      where: {
+        // relation filter: designs whose product belongs to this group
+        product: { is: { groupId: g.id } },
+        AND: [isMissing('urlLogoWebp') as any, { urlLogo: g.urlImage }],
+      },
+      data: { urlLogoWebp: imageWebp },
+    });
+    if (assign.count > 0) {
+      designLogoPropagated += assign.count;
+      console.log(`Group ${g.id}: propagated urlLogoWebp to ${assign.count} design(s)`);
+    }
   }
-
-  await prisma.group.update({ where: { id: g.id }, data: { urlImageWebp: url } });
-  groupUpdated++;
-  console.log(`Group ${g.id}: converted`);
 }
-
-const isMissing = (field: 'urlWebp' | 'urlLogoWebp' | 'urlImageWebp') => ({
-  OR: [{ [field]: null as any }, { [field]: '' as any }],
-});
 
 async function main() {
   const artistIdArg = process.argv.find((a) => a.startsWith('--artistId='));
@@ -253,7 +267,24 @@ async function main() {
     console.log('nothing to do');
   }
 
-  // Designs
+  // 1) GROUPS FIRST (convert once, then propagate to designs)
+  let cursorG: number | undefined;
+  for (;;) {
+    const batch = await prisma.group.findMany({
+      where: {
+        ...(artistId ? { artistId } : {}),
+        AND: [{ urlImage: { not: '' } }],
+      },
+      orderBy: { id: 'asc' },
+      take: 200,
+      ...(cursorG ? { skip: 1, cursor: { id: cursorG } } : {}),
+    });
+    if (!batch.length) break;
+    await Promise.all(batch.map((g) => limit(() => processGroup(g))));
+    cursorG = batch[batch.length - 1].id;
+  }
+
+  // 2) DESIGNS (finish anything still missing)
   let cursorD: number | undefined;
   for (;;) {
     const batch = await prisma.design.findMany({
@@ -273,24 +304,9 @@ async function main() {
     cursorD = batch[batch.length - 1].id;
   }
 
-  // Groups
-  let cursorG: number | undefined;
-  for (;;) {
-    const batch = await prisma.group.findMany({
-      where: {
-        ...(artistId ? { artistId } : {}),
-        AND: [{ urlImage: { not: '' } }, isMissing('urlImageWebp') as any],
-      },
-      orderBy: { id: 'asc' },
-      take: 200,
-      ...(cursorG ? { skip: 1, cursor: { id: cursorG } } : {}),
-    });
-    if (!batch.length) break;
-    await Promise.all(batch.map((g) => limit(() => processGroup(g))));
-    cursorG = batch[batch.length - 1].id;
-  }
-
-  console.log(`done. updated → designs=${designUpdated}, groups=${groupUpdated}`);
+  console.log(
+    `done. updated → designs=${designUpdated}, groups=${groupUpdated}, propagated_design_logos=${designLogoPropagated}`
+  );
   await prisma.$disconnect();
 }
 
