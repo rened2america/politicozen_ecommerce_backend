@@ -8,7 +8,8 @@ import AWS from 'aws-sdk';
 import { PrismaClient, Design, Group } from '@prisma/client';
 import type S3 from 'aws-sdk/clients/s3';
 import { connectionAws } from '../src/utils/configAws';
-
+// how to run
+// npm run convert:webp:artist
 const CONCURRENCY = Number(process.env.CONCURRENCY || 5);
 const WEBP_QUALITY = Number(process.env.WEBP_QUALITY || 82);
 const LOGO_LOSSLESS = String(process.env.WEBP_LOGO_LOSSLESS || 'true') === 'true';
