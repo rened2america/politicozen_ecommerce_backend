@@ -4,12 +4,10 @@ import http from 'http';
 import https from 'https';
 import sharp from 'sharp';
 import pLimit from 'p-limit';
+import AWS from 'aws-sdk';
 import { PrismaClient, Design, Group } from '@prisma/client';
 import type S3 from 'aws-sdk/clients/s3';
 import { connectionAws } from '../src/utils/configAws';
-
-const prisma = new PrismaClient();
-const s3: S3 = connectionAws() as S3;
 
 const CONCURRENCY = Number(process.env.CONCURRENCY || 5);
 const WEBP_QUALITY = Number(process.env.WEBP_QUALITY || 82);
@@ -19,8 +17,29 @@ const MAX_W = Number(process.env.WEBP_MAX_W || 3000);
 const MAX_H = Number(process.env.WEBP_MAX_H || 3000);
 const PUBLIC_READ = process.env.S3_PUBLIC_READ === 'true';
 
-const limit = pLimit(CONCURRENCY);
+// S3 throttling/retry
+const S3_CONCURRENCY       = Number(process.env.S3_CONCURRENCY || 2);
+const S3_QUEUE_SIZE        = Number(process.env.S3_QUEUE_SIZE   || 1);
+const S3_PART_SIZE_BYTES   = Number(process.env.S3_PART_SIZE_MB ? Number(process.env.S3_PART_SIZE_MB) * 1024 * 1024 : 8 * 1024 * 1024);
+const S3_MAX_ATTEMPTS      = Number(process.env.S3_MAX_ATTEMPTS || 8);
+const S3_BASE_DELAY_MS     = Number(process.env.S3_BASE_DELAY_MS || 200);
+const S3_MAX_DELAY_MS      = Number(process.env.S3_MAX_DELAY_MS  || 5000);
+const S3_MIN_INTERVAL_MS   = Number(process.env.S3_MIN_INTERVAL_MS || 0);
 
+// Configure AWS SDK v2 retry base BEFORE creating clients
+AWS.config.update({
+  // let SDK also retry with exponential backoff (base can be tuned)
+  maxRetries: Math.max((AWS.config as any).maxRetries || 3, S3_MAX_ATTEMPTS),
+  retryDelayOptions: { base: Math.max(100, S3_BASE_DELAY_MS) },
+} as any);
+
+const prisma = new PrismaClient();
+const s3: S3 = connectionAws() as S3;
+
+const limit = pLimit(CONCURRENCY);
+const s3Limit = pLimit(S3_CONCURRENCY);
+
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 const isEmpty = (s?: string | null) => !s || s.trim() === '';
 
 function isWebpUrl(url: string): boolean {
@@ -88,6 +107,41 @@ async function fetchUrlBuffer(url: string, redirects = 3): Promise<Buffer> {
   });
 }
 
+const isRetryableS3 = (e: any) =>
+  e?.retryable === true ||
+  e?.statusCode >= 500 ||
+  e?.code === 'SlowDown' || e?.code === 'Throttling' || e?.code === 'RequestTimeout';
+
+// full-jitter exponential backoff
+async function backoff(attemptIdx: number) {
+  const base = S3_BASE_DELAY_MS * Math.pow(2, attemptIdx); // 0,1,2,...
+  const jitter = base * (0.5 + Math.random());             // full jitter
+  const wait = Math.min(S3_MAX_DELAY_MS, jitter);
+  await sleep(wait);
+}
+
+// choose putObject for small payloads; ManagedUpload for larger
+async function uploadWithRetry(params: S3.PutObjectRequest, bodyLen: number) {
+  let attempt = 0;
+  // limit *all* S3 uploads
+  return s3Limit(async () => {
+    for (;;) {
+      try {
+        if (S3_MIN_INTERVAL_MS) await sleep(S3_MIN_INTERVAL_MS);
+        const result = await (bodyLen < S3_PART_SIZE_BYTES
+          ? s3.putObject(params).promise()
+          : (s3 as any).upload(params, { queueSize: S3_QUEUE_SIZE, partSize: S3_PART_SIZE_BYTES }).promise()
+        );
+        return result;
+      } catch (e: any) {
+        attempt++;
+        if (!isRetryableS3(e) || attempt >= S3_MAX_ATTEMPTS) throw e;
+        await backoff(attempt - 1); // attempt 1 => exponent 0
+      }
+    }
+  });
+}
+
 async function uploadWebpNextToSource(sourceUrl: string, webpBuf: Buffer): Promise<string | null> {
   const dest = makeWebpKeyFromUrl(sourceUrl);
   if (!dest) {
@@ -103,10 +157,19 @@ async function uploadWebpNextToSource(sourceUrl: string, webpBuf: Buffer): Promi
     ...(PUBLIC_READ ? { ACL: 'public-read' as any } : {}),
   };
 
-  const out: any = await (s3 as any).upload(params).promise();
-  return out?.Location || null;
+  const out: any = await uploadWithRetry(params, webpBuf.length);
+
+  // ManagedUpload returns Location; putObject doesn't. Build fallback URL if needed.
+  if (out?.Location) return out.Location;
+
+  const region = (s3 as any).config?.region || process.env.AWS_REGION || 'us-east-1';
+  const host = region === 'us-east-1'
+    ? `${dest.bucket}.s3.amazonaws.com`
+    : `${dest.bucket}.s3.${region}.amazonaws.com`;
+  return `https://${host}/${encodeURI(dest.key)}`;
 }
 
+// main converter: source = URL, upload = S3.upload/putObject, return Location
 async function convertUrlToWebp(url: string, opts: sharp.WebpOptions): Promise<string | null> {
   if (isWebpUrl(url)) {
     console.log(`no-convert: already .webp → ${url}`);
@@ -139,6 +202,7 @@ async function convertUrlToWebp(url: string, opts: sharp.WebpOptions): Promise<s
   return uploaded;
 }
 
+// ---------- Counters ----------
 let designUpdated = 0;
 let groupUpdated = 0;
 let designLogoPropagated = 0;
@@ -147,6 +211,7 @@ const isMissing = (field: 'urlWebp' | 'urlLogoWebp' | 'urlImageWebp') => ({
   OR: [{ [field]: null as any }, { [field]: '' as any }],
 });
 
+// ---------- Processors ----------
 async function processDesign(d: Design) {
   const updates: Partial<Design> = {};
 
@@ -222,12 +287,12 @@ async function processGroup(g: Group) {
   }
 
   // Propagate to designs in this group:
-  // Set Design.urlLogoWebp = Group.urlImageWebp for designs whose urlLogo equals the group's urlImage and urlLogoWebp is missing
+  // Set Design.urlLogoWebp = Group.urlImageWebp for designs that (a) belong to this group via Product,
+  // (b) have urlLogo equal to the group's urlImage, and (c) are missing urlLogoWebp.
   if (imageWebp) {
     const assign = await prisma.design.updateMany({
       where: {
-        // relation filter: designs whose product belongs to this group
-        product: { is: { groupId: g.id } },
+        product: { is: { groupId: g.id } }, // relation filter
         AND: [isMissing('urlLogoWebp') as any, { urlLogo: g.urlImage }],
       },
       data: { urlLogoWebp: imageWebp },
@@ -239,6 +304,7 @@ async function processGroup(g: Group) {
   }
 }
 
+// ---------- Main ----------
 async function main() {
   const artistIdArg = process.argv.find((a) => a.startsWith('--artistId='));
   const artistId = artistIdArg ? Number(artistIdArg.split('=')[1]) : undefined;
