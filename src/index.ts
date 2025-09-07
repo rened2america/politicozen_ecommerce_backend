@@ -36,8 +36,11 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb" }));
 app.use("/api/1", routes);
 const PORT = 4000;
+const FORCE_generateRandomArt = process.env.FORCE_generateRandomArt || false; //when the random arts are not automatically generated
 
-if (process.env.NODE_ENV === 'production') {
+if (FORCE_generateRandomArt){
+  productDAO.generateRandomArt();
+}else if (process.env.NODE_ENV === 'production') {
   console.log('Running in production mode. Scheduling generateRandomArt cron job...');
   cron.schedule('0 0 */2 * *', productDAO.generateRandomArt);
 } else {
