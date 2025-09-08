@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import authDAO from "./authDAO";
 import bcrypt from "bcrypt";
-import sgMail from "@sendgrid/mail";
 import crypto from 'crypto'
 import Mailjet from 'node-mailjet';
 
@@ -26,7 +25,7 @@ class AuthService {
   secureRandomHex = (bytes = 16) => {
     return crypto.randomBytes(bytes).toString('hex');
   }
-  
+
   isValidPassword = async (email: string, password: string) => {
     const user = await authDAO.getUserByEmail(email);
     if (!user) {
@@ -43,7 +42,15 @@ class AuthService {
   };
 
   sendEmailConfirmation = async (email: string) => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Missing Mailjet API credentials');
+      return false;
+    }
+    const mailjet = Mailjet.apiConnect(
+      process.env.MAILJET_API_KEY,
+      process.env.MAILJET_SECRET_KEY
+    );
     const jwtToken = jwt.sign(
       {
         email: email,
@@ -53,12 +60,28 @@ class AuthService {
       { expiresIn: "24h" }
     );
 
-    const msg = {
-      to: email, // Change to your recipient
-      from: "support@politicozen.com", // Change to your verified sender
-      subject: "Confirm your email",
-      text: "politicozen",
-      html: `<!DOCTYPE html>
+    try {
+      const res = await mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: 'raj@d2america.com',
+                Name: 'PoliticoZen Support',
+              },
+              To: [
+                {
+                  Email: email,            // ✅ use the function param
+                  Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                },
+              ],
+              Subject: 'Confirm your email',
+              // It's good practice to include a text fallback
+              TextPart:
+                `politicozen` +
+                `If you didn’t request this, you can ignore this email.`,
+              HTMLPart: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="utf-8"> <!-- utf-8 works for most cases -->
@@ -412,9 +435,9 @@ ul.social li{
             			<div class="text" style="padding: 0 2.5em; text-align: center;">
             				<h2>Please verify your email</h2>
             				<h3>copy this link : ${process.env
-                      .URL_DASHBOARD!}/emailconfirm/${jwtToken} or click this button</h3>
+                  .URL_DASHBOARD!}/emailconfirm/${jwtToken} or click this button</h3>
             				<p><a href="${process.env
-                      .URL_DASHBOARD!}/emailconfirm/${jwtToken}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify email</a></p>
+                  .URL_DASHBOARD!}/emailconfirm/${jwtToken}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify email</a></p>
             			</div>
             		</td>
             	</tr>
@@ -462,14 +485,31 @@ ul.social li{
 </body>
 </html>
 `,
-    };
+            },
+          ],
+        });
 
-    const emailSent = await sgMail.send(msg);
-    return emailSent;
+      // console.log('Mailjet response:', res.body);
+      return true;
+    } catch (err: any) {
+      // Mailjet can return rich error info here:
+      console.error('Mailjet error status:', err?.statusCode || '(none)');
+      console.error('Mailjet error body:', err?.response?.text || err);
+      return false;
+    }
   };
 
   sendEmailVerifyArtist = async (email: string, name: string) => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Missing Mailjet API credentials');
+      return false;
+    }
+
+    const mailjet = Mailjet.apiConnect(
+      process.env.MAILJET_API_KEY,
+      process.env.MAILJET_SECRET_KEY
+    );
+
     const jwtToken = jwt.sign(
       {
         email: email,
@@ -480,12 +520,28 @@ ul.social li{
       { expiresIn: "30d" }
     );
 
-    const msg = {
-      to: email, // Change to your recipient
-      from: "renemeza.escamilla@gmail.com", // Change to your verified sender
-      subject: "Confirm artist",
-      text: "politicozen",
-      html: `
+    try {
+      const res = await mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: 'renemeza.escamilla@gmail.com',
+                Name: 'verified sender',
+              },
+              To: [
+                {
+                  Email: email,            // ✅ use the function param
+                  Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                },
+              ],
+              Subject: 'Confirm artist',
+              // It's good practice to include a text fallback
+              TextPart:
+                `politicozen` +
+                `If you didn’t request this, you can ignore this email.`,
+              HTMLPart: `
         <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -842,9 +898,9 @@ ul.social li{
             				<h3>Name: ${name}</h2>
             				<h3>Email: ${email}</h2>
             				<h3>copy this link : ${process.env
-                      .URL_DASHBOARD!}/verifyartist/${jwtToken} or click this button</h3>
+                  .URL_DASHBOARD!}/verifyartist/${jwtToken} or click this button</h3>
             				<p><a href="${process.env
-                      .URL_DASHBOARD!}/verifyartist/${jwtToken} " style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify artist</a></p>
+                  .URL_DASHBOARD!}/verifyartist/${jwtToken} " style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Verify artist</a></p>
             			</div>
             		</td>
             	</tr>
@@ -892,36 +948,98 @@ ul.social li{
 </body>
 </html>
       `,
-    };
+            },
+          ],
+        });
 
-    const emailSent = await sgMail.send(msg);
-    return emailSent;
+      // console.log('Mailjet response:', res.body);
+      return true;
+    } catch (err: any) {
+      // Mailjet can return rich error info here:
+      console.error('Mailjet error status:', err?.statusCode || '(none)');
+      console.error('Mailjet error body:', err?.response?.text || err);
+      return false;
+    }
   };
 
   sendEmailVerify = async (email: string) => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Missing Mailjet API credentials');
+      return false;
+    }
 
-    const msg = {
-      to: email, // Change to your recipient
-      from: "renemeza.escamilla@gmail.com", // Change to your verified sender
-      subject: "Sending with SendGrid is Fun",
-      text: "and easy to do anywhere, even with Node.js",
-      html: "<strong>and easy to do anywhere, even with Node.js</strong>",
-    };
+    const mailjet = Mailjet.apiConnect(
+      process.env.MAILJET_API_KEY,
+      process.env.MAILJET_SECRET_KEY
+    );
 
-    const emailSent = await sgMail.send(msg);
-    return emailSent;
+    try {
+      const res = await mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: 'renemeza.escamilla@gmail.com',
+                Name: 'PoliticoZen verified sender',
+              },
+              To: [
+                {
+                  Email: email,            // ✅ use the function param
+                  Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                },
+              ],
+              Subject: 'Sending with Mailjet is Fun',
+              // It's good practice to include a text fallback
+              TextPart: "and easy to do anywhere, even with Node.js",
+              HTMLPart: "<strong>and easy to do anywhere, even with Node.js</strong>",
+            },
+          ],
+        });
+
+      // console.log('Mailjet response:', res.body);
+      return true;
+    } catch (err: any) {
+      // Mailjet can return rich error info here:
+      console.error('Mailjet error status:', err?.statusCode || '(none)');
+      console.error('Mailjet error body:', err?.response?.text || err);
+      return false;
+    }
   };
 
   sendEmailTest = async () => {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Missing Mailjet API credentials');
+      return false;
+    }
 
-    const msg = {
-      to: "luis@smartprintsink.com", // Change to your recipient
-      from: "renemeza.escamilla@gmail.com", // Change to your verified sender
-      subject: "New Upgrade have come to Politicozen.com",
-      text: "politicozen",
-      html: `<!DOCTYPE html>
+    const mailjet = Mailjet.apiConnect(
+      process.env.MAILJET_API_KEY,
+      process.env.MAILJET_SECRET_KEY
+    );
+
+    try {
+      const res = await mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: "renemeza.escamilla@gmail.com",
+                Name: 'PoliticoZen verified sender',
+              },
+              To: [
+                {
+                  Email: "luis@smartprintsink.com",            // ✅ use the function param
+                  Name: "luis@smartprintsink.com".split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                },
+              ],
+              Subject: 'New Upgrade have come to Politicozen.com',
+              // It's good practice to include a text fallback
+              TextPart:
+                `politicozen` +
+                `If you didn’t request this, you can ignore this email.`,
+              HTMLPart: `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="utf-8"> <!-- utf-8 works for most cases -->
@@ -1325,72 +1443,145 @@ ul.social li{
 </body>
 </html>
 `,
-    };
+            },
+          ],
+        });
 
-    const emailSent = await sgMail.send(msg);
-    return emailSent;
+      // console.log('Mailjet response:', res.body);
+      return true;
+    } catch (err: any) {
+      // Mailjet can return rich error info here:
+      console.error('Mailjet error status:', err?.statusCode || '(none)');
+      console.error('Mailjet error body:', err?.response?.text || err);
+      return false;
+    }
   };
   sendPasswordResetEmail = async (
-  email: string,
-  resetURL: string
-): Promise<boolean> => {
-  if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
-    console.error('Missing Mailjet API credentials');
-    return false;
-  }
+    email: string,
+    resetURL: string
+  ): Promise<boolean> => {
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Missing Mailjet API credentials');
+      return false;
+    }
 
-  const mailjet = Mailjet.apiConnect(
-    process.env.MAILJET_API_KEY,
-    process.env.MAILJET_SECRET_KEY
-  );
+    const mailjet = Mailjet.apiConnect(
+      process.env.MAILJET_API_KEY,
+      process.env.MAILJET_SECRET_KEY
+    );
 
-  // Optional: a tiny helper so we don’t dump a huge HTML string inline
-  const getHtml = (url: string) => `<!DOCTYPE html>
-  <!-- your same HTML from above, just make sure the image src is https and keep the ${'${url}'} placeholders -->
-  <html lang="en"> ... 
-    <h3>copy this link : ${'${url}'}</h3>
-    <p><a href="${'${url}'}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Reset Password</a></p>
-  ... </html>`.replace(/\${url}/g, url); // only needed if you paste literal ${url} in the block above
+    // Optional: a tiny helper so we don’t dump a huge HTML string inline
+    // const getHtml = (url: string) => `<!DOCTYPE html>
+    // <!-- your same HTML from above, just make sure the image src is https and keep the ${'${url}'} placeholders -->
+    // <html lang="en"> ... 
+    //   <h3>copy this link : ${'${url}'}</h3>
+    //   <span style="color:red;">Test</span>
+    //   <p><a href="${'${url}'}" style="color: white; padding:10px 15px; background-color: black; border-radius:8px" class="btn btn-primary">Reset Password</a></p>
+    // ... </html>`.replace(/\${url}/g, url); // only needed if you paste literal ${url} in the block above
 
-  try {
-    const res = await mailjet
-      .post('send', { version: 'v3.1' })
-      .request({
-        Messages: [
-          {
-            From: {
-              Email: 'raj@d2america.com',
-              Name: 'PoliticoZen Support',
-            },
-            To: [
-              {
-                Email: email,            // ✅ use the function param
-                Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+    const getHtml = (url: string) => `<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Politicozen - Reset Password</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f9f9f9; padding: 40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" border="0" cellspacing="0" cellpadding="20" style="background: #ffffff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            
+            <!-- Logo -->
+            <tr>
+              <td align="center">
+                <h1>PoliticoZen</h1>
+              </td>
+            </tr>
+
+            <!-- Title -->
+            <tr>
+              <td align="center" style="padding: 10px 20px;">
+                <h2 style="color: #333; margin: 0;">Reset Your Password</h2>
+              </td>
+            </tr>
+
+            <!-- Message -->
+            <tr>
+              <td style="color: #555; font-size: 15px; line-height: 1.6; padding: 0 30px;" align="center">
+                <p>We received a request to reset your password for <strong>PoliticoZen</strong>.</p>
+                <p>Please click the button below to set a new password:</p>
+              </td>
+            </tr>
+
+            <!-- Reset Button -->
+            <tr>
+              <td align="center" style="padding: 20px;">
+                <a href="${'${url}'}" 
+                   style="background-color: #000000; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-size: 15px; display: inline-block;">
+                  Reset Password
+                </a>
+              </td>
+            </tr>
+
+            <!-- Note -->
+            <tr>
+              <td style="color: #777; font-size: 13px; line-height: 1.6; padding: 0 30px;" align="center">
+                <p>If you didn’t request this, you can safely ignore this email.</p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center" style="padding-top: 20px; font-size: 12px; color: #aaa;">
+                © ${new Date().getFullYear()} PoliticoZen. All rights reserved.
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`.replace(/\${url}/g, url);
+    try {
+      const res = await mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: 'raj@d2america.com',
+                Name: 'PoliticoZen Support',
               },
-            ],
-            Subject: 'Password Reset Request - PoliticoZen',
-            // It's good practice to include a text fallback
-            TextPart:
-              `You requested a password reset.\n\n` +
-              `Reset link: ${resetURL}\n\n` +
-              `If you didn’t request this, you can ignore this email.`,
-            HTMLPart: getHtml(
-              // also make the image URL https in your HTML
-              resetURL
-            ),
-          },
-        ],
-      });
+              To: [
+                {
+                  Email: email,            // ✅ use the function param
+                  Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                },
+              ],
+              Subject: 'Password Reset Request - PoliticoZen',
+              // It's good practice to include a text fallback
+              TextPart:
+                `You requested a password reset.\n\n` +
+                `Reset link: ${resetURL}\n\n` +
+                `If you didn’t request this, you can ignore this email.`,
+              HTMLPart: getHtml(
+                // also make the image URL https in your HTML
+                resetURL
+              ),
+            },
+          ],
+        });
 
-    console.log('Mailjet response:', res.body);
-    return true;
-  } catch (err: any) {
-    // Mailjet can return rich error info here:
-    console.error('Mailjet error status:', err?.statusCode || '(none)');
-    console.error('Mailjet error body:', err?.response?.text || err);
-    return false;
-  }
-};
+      console.log('Mailjet response:', res.body);
+      return true;
+    } catch (err: any) {
+      // Mailjet can return rich error info here:
+      console.error('Mailjet error status:', err?.statusCode || '(none)');
+      console.error('Mailjet error body:', err?.response?.text || err);
+      return false;
+    }
+  };
 }
 
 
