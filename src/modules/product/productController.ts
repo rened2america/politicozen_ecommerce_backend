@@ -876,7 +876,7 @@ const createGroup = async (req: Request, res: Response) => {
     ContentType: "image/webp",
   };
   //@ts-ignore
-  const imgArtURL = await s3.upload(paramsImgArt).promise();
+  const imgArtURL = await s3.upload(paramsImgCrop).promise();
   // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
   const newGroup = await prisma.group.create({
     data: {
