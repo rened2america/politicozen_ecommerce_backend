@@ -5,10 +5,8 @@ require('dotenv').config();
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { prisma } from "../src/database/initialConfig";
-import artistDAO from "../src/modules/artist/artistDAO";
 
 
 //Get all the Artist from the table
