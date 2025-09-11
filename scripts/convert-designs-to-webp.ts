@@ -232,7 +232,7 @@ async function processDesign(d: Design) {
     }
   }
 
-  // logo / overlay — after group propagation, only convert if still missing
+  // logo
   if (isEmpty(d.urlLogo)) {
     logSkip('Design', d.id, 'logo: empty url');
   } else if (d.urlLogoWebp) {
@@ -254,7 +254,23 @@ async function processDesign(d: Design) {
     return;
   }
 
-  await prisma.design.update({ where: { id: d.id }, data: updates });
+  // 👇 race-safe conditional write — only update if fields are STILL missing
+  const and: any[] = [];
+  if ('urlWebp' in updates)  and.push(isMissing('urlWebp')  as any);
+  if ('urlLogoWebp' in updates) and.push(isMissing('urlLogoWebp') as any);
+
+  const whereGuard: any = { id: d.id, ...(and.length ? { AND: and } : {}) };
+
+  const res = await prisma.design.updateMany({
+    where: whereGuard,
+    data: updates,
+  });
+
+  if (res.count === 0) {
+    logSkip('Design', d.id, 'lost race/already updated');
+    return;
+  }
+
   designUpdated++;
   console.log(`Design ${d.id}: updated`);
 }
