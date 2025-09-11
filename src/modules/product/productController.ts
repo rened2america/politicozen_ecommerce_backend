@@ -868,13 +868,13 @@ const createGroup = async (req: Request, res: Response) => {
   };
   //@ts-ignore
   const imgCropURL = await s3.upload(paramsImgCrop).promise();
-  const paramsImgArt = {
-    Bucket: process.env.BUCKET_IMG,
-    //@ts-ignore
-    Key: `${Date.now().toString()}-${getArtist.name}-Art`,
-    Body: bufferArt,
-    ContentType: "image/webp",
-  };
+  // const paramsImgArt = {
+  //   Bucket: process.env.BUCKET_IMG,
+  //   //@ts-ignore
+  //   Key: `${Date.now().toString()}-${getArtist.name}-Art`,
+  //   Body: bufferArt,
+  //   ContentType: "image/webp",
+  // };
   //@ts-ignore
   const imgArtURL = await s3.upload(paramsImgCrop).promise();
   // await artistDAO.updateArtist(artistId, { avatar: imgArtURL.Location });
