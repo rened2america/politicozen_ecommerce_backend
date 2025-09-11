@@ -315,14 +315,40 @@ const resetPassword = async (req: Request, res: Response) => {
   try {
     const user = await artistService.getArtistByEmail(email);
     if (!user) {
-      res.status(400).json({ message: "User not exists!" });
+      res.status(400).json({ message: "User does not exist!" });
       return;
     }
 
     const secret = process.env.JWT + user.password;
-
+    console.log("token: ", token);    
     const verify = jwt.verify(token, secret);
 
+    const encryptedPassword = await authService.encryptPassword(password);
+             
+    await artistDAO.updateArtist(user.id, { password: encryptedPassword });      
+
+    res.status(200).json({ message: 'Password has been reset' });
+    return;
+  } catch (error) {
+    console.table(error);
+    if(error.name === "JsonWebTokenError"){
+      res.status(400).json({ message: 'Invalid Token' });
+      return;
+    }
+    res.status(500).json({ message: 'Something went wrong' });
+    return;
+  }  
+};
+
+const resetPasswordWhileLoggedIn = async (req: Request, res: Response) => { 
+  const {password} = req.body;
+  try {
+    const user = await artistService.getArtistById(req.user.artistId);    
+    if (!user) {
+      res.status(400).json({ message: "User does not exist!" });
+      return;
+    }
+    
     const encryptedPassword = await authService.encryptPassword(password);
              
     await artistDAO.updateArtist(user.id, { password: encryptedPassword });      
@@ -345,6 +371,7 @@ const userIsLoginWithDecorators = withErrorHandlingDecorator(userIsLogin);
 const sendEmailTestWithDecorators = withErrorHandlingDecorator(sendEmailTest);
 const requestPasswordResetWithDecorators = withErrorHandlingDecorator(requestPasswordReset);
 const resetPasswordWithDecorators = withErrorHandlingDecorator(resetPassword);
+const resetPasswordWhileLoggedInWithDecorators = withErrorHandlingDecorator(resetPasswordWhileLoggedIn);
 
 export const authController = {
   login: loginWithDecorators,
@@ -355,4 +382,5 @@ export const authController = {
   sendEmailTest: sendEmailTestWithDecorators,
   requestPasswordReset: requestPasswordResetWithDecorators,
   resetPassword: resetPasswordWithDecorators,
+  resetPasswordWhileLoggedIn: resetPasswordWhileLoggedInWithDecorators,
 };

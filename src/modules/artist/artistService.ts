@@ -4,6 +4,10 @@ import bcrypt from "bcrypt";
 import artistDAO from "./artistDAO";
 
 class ArtistService {
+  getArtistById = async (id: number): Promise<any | null> => {
+    const artistExist: any | null = await artistDAO.getArtistById(id);
+    return artistExist;
+  };
   getArtistByEmail = async (email: string): Promise<any | null> => {
     const artistExist: any | null = await artistDAO.getArtistByEmail(email);
     return artistExist;

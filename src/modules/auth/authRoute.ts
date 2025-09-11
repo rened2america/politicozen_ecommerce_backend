@@ -10,7 +10,8 @@ routes
   .post("/create", authController.createAccount)
   .get("/userIsLogin", authValidate, authController.userIsLogin)
   .post('/requestPasswordReset', authController.requestPasswordReset)
-  .post('/resetPassword', authController.resetPassword);
+  .post('/resetPassword', authController.resetPassword)
+  .post('/resetPasswordIn', authValidate, authController.resetPasswordWhileLoggedIn);
 // .get("/sendMailTest", authController.sendEmailTest);
 
 export const authRoute = routes;
