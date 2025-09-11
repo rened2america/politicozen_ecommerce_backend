@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { prisma } from "../src/database/initialConfig";
+import artistDAO from "../src/modules/artist/artistDAO";
 
 
 //Get all the Artist from the table
@@ -29,16 +30,16 @@ async function send_email(mailjet, name, email, loginUrl) {
                     {
                         From: {
                             Email: 'support@politicozen.com',
-                            Name: 'verified sender',
+                            Name: 'PoliticoZen Support',
                         },
                         To: [
                             {
-                                Email: email,            // ✅ use the function param
-                                Name: email.split('@')[0], // ✅ Mailjet needs "Name" (capital N)
+                                Email: email,            
+                                Name: email.split('@')[0], 
                             },
                         ],
-                        Subject: 'Confirm artist',
-                        // It's good practice to include a text fallback
+                        Subject: 'Welcome to PoliticoZen',
+                        // text fallback if html does not work
                         TextPart:
                             `politicozen` +
                             `If you didn’t request this, you can ignore this email.`,
@@ -260,6 +261,26 @@ const mailjet = Mailjet.apiConnect(
     process.env.MAILJET_SECRET_KEY
 );
 
-let name = "Raj";
-let email = "rajm150503@gmail.com"
-send_email(mailjet, name, email, "https://app.politicozen.com");
+// let name = "Raj";
+// let email = "rajm150503@gmail.com"
+
+async function send_emails_to_artists(){
+  const [artists, count] = await prisma.$transaction([
+      prisma.artist.findMany({
+        where: {
+          id:{
+            in: [135, 140]
+          } 
+        }
+      }),
+      prisma.artist.count(),
+    ]);
+    console.log("all_artists: ", artists)
+    // console.log("total artists: ", count)
+
+    artists.forEach(function(artist, index) {
+      console.log(`Sending email to ${artist.name}`)
+      send_email(mailjet, artist.name, artist.email, artist.loginUrl);      
+    })
+}
+send_emails_to_artists();
