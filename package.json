@@ -11,7 +11,8 @@
     "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1",
     "convert:webp": "ts-node ./scripts/convert-designs-to-webp.ts --onlyMissing",
-    "convert:webp:artist": "tsx ./scripts/convert-designs-to-webp.ts --onlyMissing"
+    "convert:webp:artist": "tsx ./scripts/convert-designs-to-webp.ts --onlyMissing",
+    "sendWelcomeEmail": "tsx ./scripts/send-welcome-emails"
   },
   "keywords": [],
   "author": "",

@@ -67,7 +67,7 @@ class AuthService {
           Messages: [
             {
               From: {
-                Email: 'raj@d2america.com',
+                Email: 'support@politicozen.com',
                 Name: 'PoliticoZen Support',
               },
               To: [
@@ -527,7 +527,7 @@ ul.social li{
           Messages: [
             {
               From: {
-                Email: 'raj@d2america.com',
+                Email: 'support@politicozen.com',
                 Name: 'verified sender',
               },
               To: [
@@ -1550,7 +1550,7 @@ ul.social li{
           Messages: [
             {
               From: {
-                Email: 'raj@d2america.com',
+                Email: 'support@politicozen.com',
                 Name: 'PoliticoZen Support',
               },
               To: [
